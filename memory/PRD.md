@@ -16,8 +16,8 @@ Mines Reddit, App Store reviews, Twitter complaints, Indie Hackers posts & job b
 
 ## User Choices
 - AI: OpenAI GPT-4o via emergentintegrations (EMERGENT_LLM_KEY)
-- Monetization: First idea free (1 brief), then $29/mo Pro subscription
-- Design: Dark premium + clean modern, go all out, nothing generic
+- Monetization: First idea free (1 brief), then $40/mo Pro or $60/mo Business subscription
+- Design: Dark premium + clean modern, with light/dark mode toggle
 - Sources: All (Reddit, Twitter/X, App Store, LinkedIn, Product Hunt, Indie Hackers)
 
 ---
@@ -30,6 +30,7 @@ Mines Reddit, App Store reviews, Twitter complaints, Indie Hackers posts & job b
 - **AI**: emergentintegrations (LlmChat with OpenAI gpt-4o)
 - **Auth**: JWT (PyJWT) + bcrypt password hashing
 - **Fonts**: Plus Jakarta Sans (headings), Inter (body), JetBrains Mono (data)
+- **Theming**: CSS variables with data-theme attribute, localStorage persistence
 
 ### Backend Routes (all prefixed /api)
 - `POST /auth/register` — create account
@@ -43,11 +44,11 @@ Mines Reddit, App Store reviews, Twitter complaints, Indie Hackers posts & job b
 - `POST /ideas/{id}/save` — toggle save
 - `POST /ideas/{id}/brief` — AI business brief generation
 - `POST /ideas/{id}/landing-copy` — AI landing page copy generation
-- `POST /subscription/upgrade` — MOCKED upgrade to Pro
+- `POST /subscription/upgrade` — MOCKED upgrade (accepts tier: "pro" | "business")
 - `GET /stats` — app statistics
 
 ### Database (MongoDB: idearadar_db)
-- `users` — id, email, name, password_hash, is_premium, free_briefs_used, saved_ideas[]
+- `users` — id, email, name, password_hash, is_premium, tier, free_briefs_used, saved_ideas[]
 - `ideas` — 15 seeded pain points with full metadata (scores, source, tags, etc.)
 - `user_ideas` — generated briefs and landing copies per user/idea pair
 
@@ -59,25 +60,20 @@ Mines Reddit, App Store reviews, Twitter complaints, Indie Hackers posts & job b
 - `/dashboard` — Dashboard (idea feed with source/category/sort filters)
 - `/idea/:id` — IdeaDetail (full detail, 4 metrics rings, AI generation)
 - `/saved` — SavedIdeas (user's bookmarked ideas)
-- `/pricing` — Pricing (Free vs Pro, upgrade button)
+- `/pricing` — Pricing (Free vs Pro vs Business tiers)
 
 ---
 
-## Seed Data
-15 pre-validated pain points across:
-- Finance (multi-currency invoicing, health insurance for self-employed)
-- HR & Recruiting (AI video interview screener)
-- Analytics (SaaS churn prediction, micro-SaaS portfolio analytics)
-- Legal & Compliance (privacy policy auto-updater, contract red-flag detector)
-- Operations (restaurant shift scheduling)
-- Developer Tools (App Store review → roadmap, OSS license checker)
-- Content Creation (podcast transcript converter, tweet A/B testing)
-- Sales & CRM (LinkedIn follow-up automation, onboarding video personalization)
-- Agency & Freelance (AI proposal generator)
+## Pricing Tiers
+- **Free ($0/forever)**: Browse 15+ ideas, 1 AI brief, scores & metrics, filters
+- **Pro ($40/month)**: Unlimited briefs, unlimited landing copy, priority updates, PDF export (soon)
+- **Business ($60/month)**: Everything in Pro + early sources, Scan Any Topic (soon), team sharing (soon), API access (soon), priority support
 
 ---
 
-## What's Been Implemented (v1 — 2026-02-19)
+## What's Been Implemented
+
+### v1 — 2026-02-19 (MVP)
 - [x] Full JWT authentication (register/login/me)
 - [x] 15 seeded ideas across 6 sources and 10 categories
 - [x] Idea feed with source filter, category filter, sort, and search
@@ -88,27 +84,34 @@ Mines Reddit, App Store reviews, Twitter complaints, Indie Hackers posts & job b
 - [x] Typewriter effect for generated content
 - [x] Save/unsave ideas
 - [x] Free tier enforcement (1 brief generation lifetime)
-- [x] MOCKED subscription upgrade ($29/mo Pro)
+- [x] MOCKED subscription upgrade
 - [x] Pricing page with Free/Pro comparison
 - [x] Animated landing page with live idea ticker
-- [x] Animated counter stats (14,892+ pain points, etc.)
+- [x] Animated counter stats
 - [x] Dark premium design (Bloomberg Terminal meets Linear/Vercel)
 - [x] Responsive layout
 - [x] Sonner toast notifications
 
+### v2 — 2026-02-19 (Theme + Pricing)
+- [x] Light/dark mode toggle (CSS variables, localStorage persistence)
+- [x] Theme toggle on all pages (Landing, Auth, Dashboard, Detail, Saved, Pricing)
+- [x] All hardcoded colors replaced with CSS variables for consistent theming
+- [x] 3-tier pricing: Free ($0), Pro ($40/mo), Business ($60/mo)
+- [x] Backend tier support (subscription/upgrade accepts tier parameter)
+- [x] Light mode glass variant for consistent UI
+
 ---
 
-## Test Results (2026-02-19)
-- Backend: 20/20 tests passing
-- Frontend: 95% flows working
-- AI generation: Functional (GPT-4o)
+## Test Results
+- **v1 (2026-02-19)**: Backend 20/20, Frontend 95%
+- **v2 (2026-02-19)**: Backend 23/23 (100%), Frontend 100%
 
 ---
 
 ## Prioritized Backlog
 
 ### P0 — Critical (Next Session)
-- [ ] Real Stripe payment integration for $29/mo subscription
+- [ ] Real Stripe payment integration for $40/mo and $60/mo tiers
 - [ ] Email verification on signup
 - [ ] Password reset flow
 
@@ -120,10 +123,11 @@ Mines Reddit, App Store reviews, Twitter complaints, Indie Hackers posts & job b
 - [ ] User dashboard with usage analytics
 
 ### P2 — Nice to Have
+- [ ] "Scan Any Topic" feature (niche research)
 - [ ] Idea commenting / community discussion
 - [ ] Share idea page (public link)
 - [ ] Google Auth integration
-- [ ] Idea "watchlist" with email alerts for new similar pain points
+- [ ] Idea "watchlist" with email alerts
 - [ ] CSV/Notion export
 - [ ] Mobile app (React Native)
 

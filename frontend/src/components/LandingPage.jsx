@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Radar, ArrowRight, TrendingUp, Zap, FileText, Shield, ChevronRight, CheckCircle } from 'lucide-react';
+import { Radar, ArrowRight, TrendingUp, Zap, FileText, Shield, ChevronRight, CheckCircle, Sun, Moon } from 'lucide-react';
 import OpportunityRing from './OpportunityRing';
+import { useTheme } from '../App';
 
 const TICKER_ITEMS = [
   { src: 'Reddit', srcCls: 'badge-reddit', score: 91, title: 'AI Video Interview Pre-Screener for SMBs', revenue: '$100K–$500K/mo', pain: 'severe' },
@@ -67,6 +68,7 @@ const TESTIMONIALS = [
 const LandingPage = () => {
   const [mounted, setMounted] = useState(false);
   const [count, setCount] = useState({ ideas: 0, briefs: 0, users: 0 });
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     setMounted(true);
@@ -100,6 +102,12 @@ const LandingPage = () => {
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <Link to="/pricing" style={{ fontSize: 14, color: 'var(--text-medium)', textDecoration: 'none', fontWeight: 500 }}>Pricing</Link>
+            <button data-testid="landing-theme-toggle" onClick={toggleTheme}
+              title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface-hi)', cursor: 'pointer', color: 'var(--text-medium)', transition: 'all 0.2s', flexShrink: 0 }}
+            >
+              {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
+            </button>
             <Link to="/auth" data-testid="landing-login" style={{ fontSize: 14, color: 'var(--muted)', textDecoration: 'none', fontWeight: 500 }}>Sign in</Link>
             <Link to="/auth" data-testid="landing-cta-nav"
               style={{ fontSize: 14, fontWeight: 700, padding: '8px 18px', borderRadius: 8, background: '#6366F1', color: '#fff', textDecoration: 'none', boxShadow: '0 0 20px rgba(99,102,241,0.3)' }}

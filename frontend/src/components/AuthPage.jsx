@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Radar, ArrowLeft, Eye, EyeOff } from 'lucide-react';
-import { apiClient, useAuth } from '../App';
+import { Radar, ArrowLeft, Eye, EyeOff, Sun, Moon } from 'lucide-react';
+import { apiClient, useAuth, useTheme } from '../App';
 import { toast } from 'sonner';
 
 const AuthPage = () => {
@@ -10,6 +10,7 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const { login } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
@@ -44,10 +45,18 @@ const AuthPage = () => {
       {/* Grid bg */}
       <div className="grid-bg" style={{ position: 'fixed', inset: 0, opacity: 0.4, pointerEvents: 'none' }} />
 
-      {/* Back */}
-      <Link to="/" style={{ position: 'absolute', top: 24, left: 24, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-medium)', textDecoration: 'none', fontSize: 14 }}>
-        <ArrowLeft size={16} /> Back
-      </Link>
+      {/* Back + Theme */}
+      <div style={{ position: 'absolute', top: 24, left: 24, right: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-medium)', textDecoration: 'none', fontSize: 14 }}>
+          <ArrowLeft size={16} /> Back
+        </Link>
+        <button data-testid="auth-theme-toggle" onClick={toggleTheme}
+          title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface-hi)', cursor: 'pointer', color: 'var(--text-medium)', transition: 'all 0.2s' }}
+        >
+          {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
+        </button>
+      </div>
 
       <div className="animate-fade-up" style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1 }}>
         {/* Logo */}
