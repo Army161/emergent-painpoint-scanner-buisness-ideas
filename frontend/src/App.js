@@ -14,6 +14,8 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API_BASE = `${BACKEND_URL}/api`;
 export const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
+export const ThemeContext = createContext(null);
+export const useTheme = () => useContext(ThemeContext);
 
 export const apiClient = axios.create({ baseURL: API_BASE });
 apiClient.interceptors.request.use((config) => {
@@ -31,6 +33,14 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [theme, setTheme] = useState(() => localStorage.getItem('idearadar_theme') || 'dark');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('idearadar_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 
   useEffect(() => {
     const token = localStorage.getItem('idearadar_token');
@@ -61,9 +71,10 @@ function App() {
   );
 
   return (
-    <AuthContext.Provider value={{ user, setUser, login, logout }}>
-      <Toaster theme="dark" position="bottom-right" richColors />
-      <BrowserRouter>
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+      <AuthContext.Provider value={{ user, setUser, login, logout }}>
+        <Toaster theme={theme} position="bottom-right" richColors />
+        <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthPage />} />
@@ -75,6 +86,7 @@ function App() {
         </Routes>
       </BrowserRouter>
     </AuthContext.Provider>
+    </ThemeContext.Provider>
   );
 }
 

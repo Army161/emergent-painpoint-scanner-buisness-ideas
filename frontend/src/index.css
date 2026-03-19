@@ -8,17 +8,42 @@
   --bg: #030303;
   --surface: #0A0A0A;
   --surface-hi: #111111;
+  --surface-dim: #070707;
+  --surface-deep: #050505;
+  --surface-active: #1A1A2E;
+  --surface-hover: rgba(255,255,255,0.06);
   --border: #27272A;
+  --border-subtle: #18181B;
   --border-hi: #3F3F46;
   --primary: #6366F1;
   --primary-glow: rgba(99,102,241,0.25);
   --text: #FAFAFA;
   --muted: #A1A1AA;
+  --text-medium: #71717A;
   --subtle: #52525B;
+  --nav-bg: rgba(3,3,3,0.85);
   --success: #22C55E;
   --warning: #EAB308;
   --danger: #EF4444;
   --radius: 12px;
+}
+
+[data-theme="light"] {
+  --bg: #F8F8FA;
+  --surface: #FFFFFF;
+  --surface-hi: #F4F4F5;
+  --surface-dim: #FAFAFA;
+  --surface-deep: #F5F5F6;
+  --surface-active: rgba(99,102,241,0.08);
+  --surface-hover: rgba(0,0,0,0.05);
+  --border: #E4E4E7;
+  --border-subtle: #EBEBEE;
+  --border-hi: #D4D4D8;
+  --text: #09090B;
+  --muted: #52525B;
+  --text-medium: #71717A;
+  --subtle: #A1A1AA;
+  --nav-bg: rgba(248,248,250,0.92);
 }
 
 * { box-sizing: border-box; }
@@ -50,6 +75,10 @@ h1, h2, h3, h4 {
     linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
   background-size: 40px 40px;
 }
+[data-theme="light"] .grid-bg {
+  background-image: linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+}
 
 /* Glow effects */
 .glow-primary { box-shadow: 0 0 30px var(--primary-glow); }
@@ -59,6 +88,12 @@ h1, h2, h3, h4 {
 /* Gradient text */
 .gradient-text {
   background: linear-gradient(135deg, #fff 30%, #6366F1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+[data-theme="light"] .gradient-text {
+  background: linear-gradient(135deg, #1E1B4B 30%, #6366F1 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -78,6 +113,9 @@ h1, h2, h3, h4 {
   border-color: rgba(99,102,241,0.4);
   transform: translateY(-2px);
   box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(99,102,241,0.15);
+}
+[data-theme="light"] .card-hover:hover {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08), 0 0 0 1px rgba(99,102,241,0.15);
 }
 
 /* Glass */

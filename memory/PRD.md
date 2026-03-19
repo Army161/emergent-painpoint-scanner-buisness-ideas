@@ -4,7 +4,7 @@
 **IdeaRadar** is a first-to-market AI-powered Micro-SaaS Idea Finder and Validator.
 It's the "Bloomberg Terminal for startup ideas" — mining real pain points from 6 online sources, scoring them on market potential, and generating full business briefs + landing page copy on demand.
 
-**URL**: https://prosperity-pulse.preview.emergentagent.com  
+**URL**: https://radar-light-dark.preview.emergentagent.com  
 **App Name**: IdeaRadar  
 **Date Started**: 2026-02-19
 

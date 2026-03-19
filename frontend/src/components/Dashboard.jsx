@@ -62,11 +62,11 @@ const Dashboard = () => {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: '#030303' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <Navbar />
 
       {/* Stats bar */}
-      <div style={{ background: '#070707', borderBottom: '1px solid #18181B', padding: '10px 0' }}>
+      <div style={{ background: 'var(--surface-dim)', borderBottom: '1px solid var(--border-subtle)', padding: '10px 0' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', display: 'flex', gap: 32, alignItems: 'center', overflowX: 'auto' }}>
           {[
             { label: 'Pain Points Discovered', value: `${(stats.ideas_discovered || 15).toLocaleString()}+` },
@@ -75,11 +75,11 @@ const Dashboard = () => {
             { label: 'Avg Opportunity Score', value: '82/100' },
           ].map(({ label, value }) => (
             <div key={label} style={{ display: 'flex', gap: 8, alignItems: 'center', whiteSpace: 'nowrap' }}>
-              <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: '#FAFAFA' }}>{value}</span>
-              <span style={{ fontSize: 12, color: '#52525B' }}>{label}</span>
+              <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{value}</span>
+              <span style={{ fontSize: 12, color: 'var(--subtle)' }}>{label}</span>
             </div>
           ))}
-          <button onClick={fetchIdeas} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#71717A', cursor: 'pointer', fontSize: 13 }}>
+          <button onClick={fetchIdeas} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--text-medium)', cursor: 'pointer', fontSize: 13 }}>
             <RefreshCw size={13} />Live
           </button>
         </div>
@@ -88,33 +88,33 @@ const Dashboard = () => {
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 24px 48px' }}>
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: '#FAFAFA', fontFamily: 'Plus Jakarta Sans' }}>Opportunity Feed</h1>
-          <p style={{ margin: '6px 0 0', fontSize: 14, color: '#71717A' }}>AI-validated pain points mined from 6 sources. Each one is a business waiting to be built.</p>
+          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: 'var(--text)', fontFamily: 'Plus Jakarta Sans' }}>Opportunity Feed</h1>
+          <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--text-medium)' }}>AI-validated pain points mined from 6 sources. Each one is a business waiting to be built.</p>
         </div>
 
         {/* Filters row */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Search */}
           <div style={{ position: 'relative', flex: '1', minWidth: 200, maxWidth: 340 }}>
-            <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#52525B' }} />
+            <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--subtle)' }} />
             <input data-testid="search-input" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search pain points..."
-              style={{ width: '100%', paddingLeft: 36, paddingRight: 16, paddingTop: 10, paddingBottom: 10, borderRadius: 8, border: '1px solid #27272A', background: '#0A0A0A', color: '#FAFAFA', fontSize: 14, outline: 'none', fontFamily: 'Inter' }} />
+          style={{ width: '100%', paddingLeft: 36, paddingRight: 16, paddingTop: 10, paddingBottom: 10, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 14, outline: 'none', fontFamily: 'Inter' }} />
           </div>
 
           {/* Sort */}
-          <div style={{ display: 'flex', gap: 4, background: '#0A0A0A', borderRadius: 8, border: '1px solid #27272A', padding: 3 }}>
+          <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', borderRadius: 8, border: '1px solid var(--border)', padding: 3 }}>
             {SORTS.map(({ key, label, icon }) => (
               <button key={key} data-testid={`sort-${key}`} onClick={() => setSort(key)}
                 style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
-                  background: sort === key ? '#1A1A2E' : 'transparent',
-                  color: sort === key ? '#818CF8' : '#71717A',
+                  background: sort === key ? 'var(--surface-active)' : 'transparent',
+                  color: sort === key ? '#818CF8' : 'var(--text-medium)',
                   transition: 'all 0.15s'
                 }}
               >{icon}{label}</button>
             ))}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#52525B', fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--subtle)', fontSize: 13 }}>
             <SlidersHorizontal size={14} />
             <span>{filtered.length} results</span>
           </div>
@@ -124,9 +124,9 @@ const Dashboard = () => {
         <div style={{ display: 'flex', gap: 6, marginBottom: 20, overflowX: 'auto', paddingBottom: 4 }}>
           {SOURCES.map(({ key, label }) => (
             <button key={key} data-testid={`source-${key}`} onClick={() => setSource(key)}
-              style={{ padding: '6px 14px', borderRadius: 99, border: `1px solid ${source === key ? 'rgba(99,102,241,0.5)' : '#27272A'}`,
+              style={{ padding: '6px 14px', borderRadius: 99, border: `1px solid ${source === key ? 'rgba(99,102,241,0.5)' : 'var(--border)'}`,
                 background: source === key ? 'rgba(99,102,241,0.12)' : 'transparent',
-                color: source === key ? '#818CF8' : '#71717A',
+                color: source === key ? '#818CF8' : 'var(--text-medium)',
                 fontSize: 13, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s'
               }}
             >{label}</button>
@@ -137,9 +137,9 @@ const Dashboard = () => {
         <div style={{ display: 'flex', gap: 6, marginBottom: 28, overflowX: 'auto', paddingBottom: 4 }}>
           {CATEGORIES.map((cat) => (
             <button key={cat} data-testid={`cat-${cat}`} onClick={() => setCategory(cat)}
-              style={{ padding: '4px 12px', borderRadius: 99, border: `1px solid ${category === cat ? '#3F3F46' : '#18181B'}`,
-                background: category === cat ? '#18181B' : 'transparent',
-                color: category === cat ? '#FAFAFA' : '#52525B',
+              style={{ padding: '4px 12px', borderRadius: 99, border: `1px solid ${category === cat ? 'var(--border-hi)' : 'var(--border-subtle)'}`,
+                background: category === cat ? 'var(--surface-hi)' : 'transparent',
+                color: category === cat ? 'var(--text)' : 'var(--subtle)',
                 fontSize: 12, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s'
               }}
             >{cat === 'all' ? 'All Categories' : cat}</button>
@@ -156,8 +156,8 @@ const Dashboard = () => {
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
             <div style={{ fontSize: 40, marginBottom: 16 }}>—</div>
-            <p style={{ color: '#52525B', fontSize: 16 }}>No ideas match your filters</p>
-            <button onClick={() => { setSource('all'); setCategory('all'); setSearch(''); }} style={{ marginTop: 12, padding: '8px 20px', borderRadius: 8, border: '1px solid #27272A', background: 'transparent', color: '#A1A1AA', cursor: 'pointer', fontSize: 14 }}>
+            <p style={{ color: 'var(--subtle)', fontSize: 16 }}>No ideas match your filters</p>
+            <button onClick={() => { setSource('all'); setCategory('all'); setSearch(''); }} style={{ marginTop: 12, padding: '8px 20px', borderRadius: 8, border: '1px solid #27272A', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', fontSize: 14 }}>
               Clear filters
             </button>
           </div>
