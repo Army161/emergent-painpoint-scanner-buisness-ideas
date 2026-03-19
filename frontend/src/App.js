@@ -1,53 +1,80 @@
-import { useEffect } from "react";
-import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import React, { useState, useEffect, createContext, useContext } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import axios from 'axios';
+import LandingPage from './components/LandingPage';
+import AuthPage from './components/AuthPage';
+import Dashboard from './components/Dashboard';
+import IdeaDetail from './components/IdeaDetail';
+import SavedIdeas from './components/SavedIdeas';
+import Pricing from './components/Pricing';
+import { Toaster } from 'sonner';
+import './App.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+export const API_BASE = `${BACKEND_URL}/api`;
+export const AuthContext = createContext(null);
+export const useAuth = () => useContext(AuthContext);
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
+export const apiClient = axios.create({ baseURL: API_BASE });
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('idearadar_token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
 
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
+const ProtectedRoute = ({ children }) => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/auth" replace />;
+  return children;
 };
 
 function App() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('idearadar_token');
+    if (token) {
+      apiClient.get('/auth/me')
+        .then(res => setUser(res.data))
+        .catch(() => localStorage.removeItem('idearadar_token'))
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const login = (token, userData) => {
+    localStorage.setItem('idearadar_token', token);
+    setUser(userData);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('idearadar_token');
+    setUser(null);
+  };
+
+  if (loading) return (
+    <div className="loading-screen">
+      <div className="spinner" />
+    </div>
+  );
+
   return (
-    <div className="App">
+    <AuthContext.Provider value={{ user, setUser, login, logout }}>
+      <Toaster theme="dark" position="bottom-right" richColors />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthPage />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/idea/:id" element={<ProtectedRoute><IdeaDetail /></ProtectedRoute>} />
+          <Route path="/saved" element={<ProtectedRoute><SavedIdeas /></ProtectedRoute>} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>
-    </div>
+    </AuthContext.Provider>
   );
 }
 

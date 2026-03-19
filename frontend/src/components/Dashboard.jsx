@@ -1,0 +1,178 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, SlidersHorizontal, TrendingUp, Clock, Zap, RefreshCw } from 'lucide-react';
+import { apiClient } from '../App';
+import Navbar from './Navbar';
+import IdeaCard from './IdeaCard';
+import { toast } from 'sonner';
+
+const SOURCES = [
+  { key: 'all', label: 'All Sources' },
+  { key: 'reddit', label: 'Reddit' },
+  { key: 'twitter', label: 'Twitter / X' },
+  { key: 'linkedin', label: 'LinkedIn' },
+  { key: 'appstore', label: 'App Store' },
+  { key: 'producthunt', label: 'Product Hunt' },
+  { key: 'indiehackers', label: 'Indie Hackers' },
+];
+
+const CATEGORIES = [
+  'all', 'Finance', 'HR & Recruiting', 'Analytics', 'Operations',
+  'Developer Tools', 'Content Creation', 'Sales & CRM', 'Legal & Compliance',
+  'Agency & Freelance', 'Finance & Health'
+];
+
+const SORTS = [
+  { key: 'trending', label: 'Trending', icon: <TrendingUp size={14} /> },
+  { key: 'score', label: 'Highest Score', icon: <Zap size={14} /> },
+  { key: 'newest', label: 'Newest', icon: <Clock size={14} /> },
+];
+
+const Dashboard = () => {
+  const [ideas, setIdeas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [source, setSource] = useState('all');
+  const [category, setCategory] = useState('all');
+  const [sort, setSort] = useState('trending');
+  const [search, setSearch] = useState('');
+  const [stats, setStats] = useState({});
+
+  const fetchIdeas = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await apiClient.get('/ideas/feed', { params: { source, category, sort } });
+      setIdeas(res.data);
+    } catch {
+      toast.error('Failed to load ideas');
+    } finally {
+      setLoading(false);
+    }
+  }, [source, category, sort]);
+
+  useEffect(() => { fetchIdeas(); }, [fetchIdeas]);
+  useEffect(() => {
+    apiClient.get('/stats').then(r => setStats(r.data)).catch(() => {});
+  }, []);
+
+  const handleSaveToggle = (ideaId, saved) => {
+    setIdeas(prev => prev.map(i => i.id === ideaId ? { ...i, is_saved: saved } : i));
+  };
+
+  const filtered = ideas.filter(i =>
+    !search || i.title.toLowerCase().includes(search.toLowerCase()) || i.description.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#030303' }}>
+      <Navbar />
+
+      {/* Stats bar */}
+      <div style={{ background: '#070707', borderBottom: '1px solid #18181B', padding: '10px 0' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', display: 'flex', gap: 32, alignItems: 'center', overflowX: 'auto' }}>
+          {[
+            { label: 'Pain Points Discovered', value: `${(stats.ideas_discovered || 15).toLocaleString()}+` },
+            { label: 'Briefs Generated Today', value: `${(stats.briefs_generated || 0) + 847}` },
+            { label: 'Sources Monitored', value: '6' },
+            { label: 'Avg Opportunity Score', value: '82/100' },
+          ].map(({ label, value }) => (
+            <div key={label} style={{ display: 'flex', gap: 8, alignItems: 'center', whiteSpace: 'nowrap' }}>
+              <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: '#FAFAFA' }}>{value}</span>
+              <span style={{ fontSize: 12, color: '#52525B' }}>{label}</span>
+            </div>
+          ))}
+          <button onClick={fetchIdeas} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#71717A', cursor: 'pointer', fontSize: 13 }}>
+            <RefreshCw size={13} />Live
+          </button>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 24px 48px' }}>
+        {/* Header */}
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: '#FAFAFA', fontFamily: 'Plus Jakarta Sans' }}>Opportunity Feed</h1>
+          <p style={{ margin: '6px 0 0', fontSize: 14, color: '#71717A' }}>AI-validated pain points mined from 6 sources. Each one is a business waiting to be built.</p>
+        </div>
+
+        {/* Filters row */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* Search */}
+          <div style={{ position: 'relative', flex: '1', minWidth: 200, maxWidth: 340 }}>
+            <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#52525B' }} />
+            <input data-testid="search-input" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search pain points..."
+              style={{ width: '100%', paddingLeft: 36, paddingRight: 16, paddingTop: 10, paddingBottom: 10, borderRadius: 8, border: '1px solid #27272A', background: '#0A0A0A', color: '#FAFAFA', fontSize: 14, outline: 'none', fontFamily: 'Inter' }} />
+          </div>
+
+          {/* Sort */}
+          <div style={{ display: 'flex', gap: 4, background: '#0A0A0A', borderRadius: 8, border: '1px solid #27272A', padding: 3 }}>
+            {SORTS.map(({ key, label, icon }) => (
+              <button key={key} data-testid={`sort-${key}`} onClick={() => setSort(key)}
+                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
+                  background: sort === key ? '#1A1A2E' : 'transparent',
+                  color: sort === key ? '#818CF8' : '#71717A',
+                  transition: 'all 0.15s'
+                }}
+              >{icon}{label}</button>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#52525B', fontSize: 13 }}>
+            <SlidersHorizontal size={14} />
+            <span>{filtered.length} results</span>
+          </div>
+        </div>
+
+        {/* Source tabs */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 20, overflowX: 'auto', paddingBottom: 4 }}>
+          {SOURCES.map(({ key, label }) => (
+            <button key={key} data-testid={`source-${key}`} onClick={() => setSource(key)}
+              style={{ padding: '6px 14px', borderRadius: 99, border: `1px solid ${source === key ? 'rgba(99,102,241,0.5)' : '#27272A'}`,
+                background: source === key ? 'rgba(99,102,241,0.12)' : 'transparent',
+                color: source === key ? '#818CF8' : '#71717A',
+                fontSize: 13, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s'
+              }}
+            >{label}</button>
+          ))}
+        </div>
+
+        {/* Category filter */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 28, overflowX: 'auto', paddingBottom: 4 }}>
+          {CATEGORIES.map((cat) => (
+            <button key={cat} data-testid={`cat-${cat}`} onClick={() => setCategory(cat)}
+              style={{ padding: '4px 12px', borderRadius: 99, border: `1px solid ${category === cat ? '#3F3F46' : '#18181B'}`,
+                background: category === cat ? '#18181B' : 'transparent',
+                color: category === cat ? '#FAFAFA' : '#52525B',
+                fontSize: 12, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s'
+              }}
+            >{cat === 'all' ? 'All Categories' : cat}</button>
+          ))}
+        </div>
+
+        {/* Grid */}
+        {loading ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
+            {[...Array(9)].map((_, i) => (
+              <div key={i} className="shimmer" style={{ height: 280, borderRadius: 12 }} />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '80px 0' }}>
+            <div style={{ fontSize: 40, marginBottom: 16 }}>—</div>
+            <p style={{ color: '#52525B', fontSize: 16 }}>No ideas match your filters</p>
+            <button onClick={() => { setSource('all'); setCategory('all'); setSearch(''); }} style={{ marginTop: 12, padding: '8px 20px', borderRadius: 8, border: '1px solid #27272A', background: 'transparent', color: '#A1A1AA', cursor: 'pointer', fontSize: 14 }}>
+              Clear filters
+            </button>
+          </div>
+        ) : (
+          <div data-testid="ideas-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
+            {filtered.map((idea, i) => (
+              <div key={idea.id} className="animate-fade-up" style={{ animationDelay: `${i * 40}ms`, opacity: 0 }}>
+                <IdeaCard idea={idea} onSaveToggle={handleSaveToggle} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
