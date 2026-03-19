@@ -66,8 +66,8 @@ const Pricing = () => {
               ))}
             </div>
             {user ? (
-              <div style={{ padding: '12px', borderRadius: 8, border: '1px solid #27272A', textAlign: 'center', color: '#52525B', fontSize: 14 }}>
-                {user.is_premium ? 'Your current plan' : 'Current plan'}
+              <div style={{ padding: '12px', borderRadius: 8, border: '1px solid #27272A', textAlign: 'center', color: user.is_premium ? '#52525B' : '#A1A1AA', fontSize: 14 }}>
+                {user.is_premium ? 'Previous plan' : 'Current plan (Active)'}
               </div>
             ) : (
               <Link to="/auth" data-testid="free-cta"
