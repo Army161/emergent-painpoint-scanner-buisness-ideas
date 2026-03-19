@@ -592,10 +592,19 @@ async def generate_landing_copy(idea_id: str, user=Depends(require_user)):
         await db.users.update_one({"id": user["id"]}, {"$inc": {"free_briefs_used": 1}})
     return {"landing_copy": copy}
 
+class UpgradeRequest(BaseModel):
+    tier: str = "pro"
+
 @api_router.post("/subscription/upgrade")
-async def upgrade(user=Depends(require_user)):
-    await db.users.update_one({"id": user["id"]}, {"$set": {"is_premium": True}})
-    return {"success": True, "message": "Welcome to IdeaRadar Pro!"}
+async def upgrade(data: UpgradeRequest, user=Depends(require_user)):
+    if data.tier not in ("pro", "business"):
+        raise HTTPException(400, "Invalid tier. Choose 'pro' or 'business'.")
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"is_premium": True, "tier": data.tier}}
+    )
+    tier_label = "Business" if data.tier == "business" else "Pro"
+    return {"success": True, "message": f"Welcome to IdeaRadar {tier_label}!"}
 
 @api_router.get("/stats")
 async def get_stats():

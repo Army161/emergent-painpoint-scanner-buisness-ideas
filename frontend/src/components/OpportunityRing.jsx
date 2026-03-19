@@ -30,7 +30,7 @@ const OpportunityRing = ({ score = 0, size = 80, strokeWidth = 6, label, showLab
       {showLabel && (
         <div style={{ textAlign: 'center', zIndex: 1 }}>
           <div className="mono" style={{ fontSize: size * 0.22, fontWeight: 700, color, lineHeight: 1 }}>{score}</div>
-          {label && <div style={{ fontSize: size * 0.13, color: '#71717A', marginTop: 1, lineHeight: 1 }}>{label}</div>}
+          {label && <div style={{ fontSize: size * 0.13, color: 'var(--text-medium)', marginTop: 1, lineHeight: 1 }}>{label}</div>}
         </div>
       )}
     </div>

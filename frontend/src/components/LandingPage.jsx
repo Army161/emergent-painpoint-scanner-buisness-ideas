@@ -145,7 +145,7 @@ const LandingPage = () => {
             </div>
 
             {/* Stats */}
-            <div className="animate-fade-up delay-400" style={{ display: 'flex', gap: 32, paddingTop: 24, borderTop: '1px solid #111' }}>
+            <div className="animate-fade-up delay-400" style={{ display: 'flex', gap: 32, paddingTop: 24, borderTop: '1px solid var(--border-subtle)' }}>
               {[
                 { value: count.ideas.toLocaleString() + '+', label: 'Pain points tracked' },
                 { value: count.briefs.toLocaleString() + '+', label: 'Briefs generated' },
@@ -268,7 +268,7 @@ const LandingPage = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
             {TESTIMONIALS.map(({ text, name, title, product }) => (
               <div key={name} className="card" style={{ padding: '24px' }}>
-                <p style={{ margin: '0 0 16px', fontSize: 14, color: '#D4D4D8', lineHeight: 1.7, fontStyle: 'italic' }}>"{text}"</p>
+                <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--muted)', lineHeight: 1.7, fontStyle: 'italic' }}>"{text}"</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff' }}>
                     {name.charAt(0)}

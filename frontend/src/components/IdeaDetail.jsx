@@ -118,7 +118,7 @@ const IdeaDetail = () => {
   };
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#030303' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <Navbar />
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 24px' }}>
         {[...Array(3)].map((_, i) => <div key={i} className="shimmer" style={{ height: 80, borderRadius: 10, marginBottom: 12 }} />)}
@@ -126,7 +126,7 @@ const IdeaDetail = () => {
     </div>
   );
 
-  if (!idea) return <div style={{ minHeight: '100vh', background: '#030303', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-medium)' }}>Idea not found</div>;
+  if (!idea) return <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-medium)' }}>Idea not found</div>;
 
   const painColor = idea.pain_intensity === 'severe' ? '#EF4444' : idea.pain_intensity === 'moderate' ? '#EAB308' : '#22C55E';
   const srcCls = SOURCE_CLS[idea.source] || '';
@@ -206,7 +206,7 @@ const IdeaDetail = () => {
             {(brief || copy) && (
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
                 {/* Tabs */}
-                <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', background: '#070707' }}>
+                <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', background: 'var(--surface-dim)' }}>
                   {[
                     { key: 'brief', label: 'Business Brief', icon: <FileText size={14} />, available: !!brief },
                     { key: 'copy', label: 'Landing Page Copy', icon: <Zap size={14} />, available: !!copy },
@@ -242,7 +242,7 @@ const IdeaDetail = () => {
                 { label: 'Source Validation', value: `${idea.votes_on_source?.toLocaleString()} votes`, color: '#818CF8' },
                 { label: 'Community Upvotes', value: idea.upvotes?.toLocaleString(), color: '#F59E0B' },
               ].map(({ label, value, color }) => (
-                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #111' }}>
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
                   <span style={{ fontSize: 13, color: 'var(--text-medium)' }}>{label}</span>
                   <span className="mono" style={{ fontSize: 13, fontWeight: 700, color }}>{value}</span>
                 </div>
@@ -252,13 +252,13 @@ const IdeaDetail = () => {
             {/* Actions */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <button data-testid="generate-brief-btn" onClick={generateBrief} disabled={generating.brief}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px', borderRadius: 10, border: 'none', background: generating.brief ? '#374151' : '#6366F1', color: '#fff', fontSize: 14, fontWeight: 700, cursor: generating.brief ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: '0 0 20px rgba(99,102,241,0.25)', fontFamily: 'Plus Jakarta Sans' }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px', borderRadius: 10, border: 'none', background: generating.brief ? 'var(--border-hi)' : '#6366F1', color: '#fff', fontSize: 14, fontWeight: 700, cursor: generating.brief ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: '0 0 20px rgba(99,102,241,0.25)', fontFamily: 'Plus Jakarta Sans' }}
               >
                 <FileText size={16} />
                 {generating.brief ? 'Generating...' : brief ? 'Regenerate Brief' : 'Generate Business Brief'}
               </button>
               <button data-testid="generate-copy-btn" onClick={generateCopy} disabled={generating.copy}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px', borderRadius: 10, border: '1px solid #3F3F46', background: 'transparent', color: 'var(--text)', fontSize: 14, fontWeight: 700, cursor: generating.copy ? 'not-allowed' : 'pointer', transition: 'all 0.2s', fontFamily: 'Plus Jakarta Sans' }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px', borderRadius: 10, border: '1px solid var(--border-hi)', background: 'transparent', color: 'var(--text)', fontSize: 14, fontWeight: 700, cursor: generating.copy ? 'not-allowed' : 'pointer', transition: 'all 0.2s', fontFamily: 'Plus Jakarta Sans' }}
               >
                 <Zap size={16} />
                 {generating.copy ? 'Generating...' : copy ? 'Regenerate Copy' : 'Generate Landing Copy'}
@@ -280,7 +280,7 @@ const IdeaDetail = () => {
                   {user?.free_briefs_used >= 1 ? 'You\'ve used your free brief. Upgrade to Pro for unlimited briefs, landing copies, and more.' : 'Generate your first brief for free. Upgrade for unlimited access.'}
                 </p>
                 <Link to="/pricing" style={{ display: 'block', textAlign: 'center', padding: '9px', borderRadius: 8, background: '#6366F1', color: '#fff', textDecoration: 'none', fontSize: 13, fontWeight: 700 }}>
-                  View Pro Plans
+                View Plans
                 </Link>
               </div>
             )}

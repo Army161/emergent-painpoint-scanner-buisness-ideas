@@ -148,18 +148,44 @@ class TestSaveIdea:
         assert resp.status_code == 401
 
 
-# Subscription tests
+# Subscription tests (upgrade endpoint is MOCKED - no real payment)
 class TestSubscription:
-    """Subscription upgrade test (mocked)"""
+    """Subscription upgrade test - POST /api/subscription/upgrade accepts tier='pro' or 'business'"""
 
-    def test_upgrade_to_premium(self, auth_headers):
-        resp = requests.post(f"{BASE_URL}/api/subscription/upgrade", headers=auth_headers)
+    def test_upgrade_to_pro_tier(self, auth_headers):
+        """Test upgrade to Pro tier with explicit tier parameter"""
+        resp = requests.post(f"{BASE_URL}/api/subscription/upgrade", json={"tier": "pro"}, headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert data["success"] == True
+        assert "Pro" in data["message"]
+
+    def test_upgrade_to_business_tier(self, auth_headers):
+        """Test upgrade to Business tier with tier parameter"""
+        resp = requests.post(f"{BASE_URL}/api/subscription/upgrade", json={"tier": "business"}, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] == True
+        assert "Business" in data["message"]
+
+    def test_upgrade_invalid_tier(self, auth_headers):
+        """Test that invalid tier returns 400"""
+        resp = requests.post(f"{BASE_URL}/api/subscription/upgrade", json={"tier": "invalid"}, headers=auth_headers)
+        assert resp.status_code == 400
+        data = resp.json()
+        assert "Invalid tier" in data.get("detail", "")
+
+    def test_upgrade_default_tier_is_pro(self, auth_headers):
+        """Test default tier is 'pro' when no tier specified"""
+        resp = requests.post(f"{BASE_URL}/api/subscription/upgrade", json={}, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] == True
+        # Default tier should be 'pro'
+        assert "Pro" in data["message"]
 
     def test_upgrade_requires_auth(self):
-        resp = requests.post(f"{BASE_URL}/api/subscription/upgrade")
+        resp = requests.post(f"{BASE_URL}/api/subscription/upgrade", json={"tier": "pro"})
         assert resp.status_code == 401
 
 

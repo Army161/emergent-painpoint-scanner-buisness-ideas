@@ -157,7 +157,7 @@ const Dashboard = () => {
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
             <div style={{ fontSize: 40, marginBottom: 16 }}>—</div>
             <p style={{ color: 'var(--subtle)', fontSize: 16 }}>No ideas match your filters</p>
-            <button onClick={() => { setSource('all'); setCategory('all'); setSearch(''); }} style={{ marginTop: 12, padding: '8px 20px', borderRadius: 8, border: '1px solid #27272A', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', fontSize: 14 }}>
+            <button onClick={() => { setSource('all'); setCategory('all'); setSearch(''); }} style={{ marginTop: 12, padding: '8px 20px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', fontSize: 14 }}>
               Clear filters
             </button>
           </div>

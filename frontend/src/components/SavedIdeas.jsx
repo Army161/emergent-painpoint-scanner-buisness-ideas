@@ -33,7 +33,7 @@ const SavedIdeas = () => {
           </div>
         ) : ideas.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '100px 0' }}>
-            <BookmarkX size={40} color="#3F3F46" style={{ margin: '0 auto 16px', display: 'block' }} />
+            <BookmarkX size={40} color="var(--border-hi)" style={{ margin: '0 auto 16px', display: 'block' }} />
             <h3 style={{ margin: '0 0 8px', fontSize: 18, color: 'var(--text-medium)', fontFamily: 'Plus Jakarta Sans' }}>No saved ideas yet</h3>
             <p style={{ margin: '0 0 20px', fontSize: 14, color: 'var(--subtle)' }}>Browse the feed and save ideas that excite you</p>
             <Link to="/dashboard" style={{ display: 'inline-flex', padding: '10px 20px', borderRadius: 8, background: '#6366F1', color: '#fff', textDecoration: 'none', fontSize: 14, fontWeight: 600 }}>

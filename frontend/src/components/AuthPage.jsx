@@ -67,7 +67,7 @@ const AuthPage = () => {
               <button key={m} data-testid={`tab-${m}`} onClick={() => setMode(m)}
                 style={{
                   flex: 1, padding: '8px 0', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'Inter',
-                  background: mode === m ? '#1E1E2E' : 'transparent',
+                  background: mode === m ? 'var(--surface-active)' : 'transparent',
                   color: mode === m ? 'var(--text)' : 'var(--text-medium)',
                   transition: 'all 0.2s',
                   boxShadow: mode === m ? '0 0 0 1px rgba(99,102,241,0.3)' : 'none'
@@ -81,26 +81,26 @@ const AuthPage = () => {
               <div>
                 <label style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 6, display: 'block' }}>Name</label>
                 <input data-testid="name-input" value={form.name} onChange={set('name')} placeholder="Your name" style={inputStyle}
-                  onFocus={e => e.target.style.borderColor = '#6366F1'} onBlur={e => e.target.style.borderColor = '#27272A'} />
+                  onFocus={e => e.target.style.borderColor = '#6366F1'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
               </div>
             )}
             <div>
               <label style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 6, display: 'block' }}>Email</label>
               <input data-testid="email-input" type="email" value={form.email} onChange={set('email')} placeholder="you@company.com" style={inputStyle}
-                onFocus={e => e.target.style.borderColor = '#6366F1'} onBlur={e => e.target.style.borderColor = '#27272A'} />
+                onFocus={e => e.target.style.borderColor = '#6366F1'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
             </div>
             <div>
               <label style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 6, display: 'block' }}>Password</label>
               <div style={{ position: 'relative' }}>
                 <input data-testid="password-input" type={showPass ? 'text' : 'password'} value={form.password} onChange={set('password')} placeholder="••••••••" style={{ ...inputStyle, paddingRight: 44 }}
-                  onFocus={e => e.target.style.borderColor = '#6366F1'} onBlur={e => e.target.style.borderColor = '#27272A'} />
+                  onFocus={e => e.target.style.borderColor = '#6366F1'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
                 <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-medium)' }}>
                   {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
             <button data-testid="auth-submit-btn" type="submit" disabled={loading}
-              style={{ padding: '13px', borderRadius: 10, border: 'none', background: loading ? '#374151' : '#6366F1', color: '#fff', fontSize: 15, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: '0 0 20px rgba(99,102,241,0.3)', fontFamily: 'Plus Jakarta Sans' }}
+              style={{ padding: '13px', borderRadius: 10, border: 'none', background: loading ? 'var(--border-hi)' : '#6366F1', color: '#fff', fontSize: 15, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: '0 0 20px rgba(99,102,241,0.3)', fontFamily: 'Plus Jakarta Sans' }}
             >{loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}</button>
           </form>
 
@@ -113,7 +113,7 @@ const AuthPage = () => {
           </p>
         </div>
 
-        <p style={{ textAlign: 'center', fontSize: 12, color: '#3F3F46', marginTop: 16 }}>
+        <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--subtle)', marginTop: 16 }}>
           Free plan includes 1 AI-generated business brief
         </p>
       </div>

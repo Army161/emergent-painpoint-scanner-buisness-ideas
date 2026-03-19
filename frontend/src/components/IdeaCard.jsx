@@ -51,7 +51,7 @@ const IdeaCard = ({ idea, onSaveToggle }) => {
               </span>
             )}
           </div>
-          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: 'rgba(255,255,255,0.04)', color: 'var(--muted)', border: '1px solid #27272A' }}>
+          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: 'var(--surface-hover)', color: 'var(--muted)', border: '1px solid var(--border)' }}>
             {idea.category}
           </span>
         </div>
