@@ -12,6 +12,7 @@ const SOURCE_LABELS = {
   appstore: { label: 'App Store', cls: 'badge-appstore' },
   producthunt: { label: 'Product Hunt', cls: 'badge-producthunt' },
   indiehackers: { label: 'Indie Hackers', cls: 'badge-indiehackers' },
+  ai_scan: { label: 'AI Scan', cls: 'badge-ai_scan' },
 };
 
 const IdeaCard = ({ idea, onSaveToggle }) => {

@@ -13,6 +13,8 @@ from pathlib import Path
 from pydantic import BaseModel
 from typing import List, Optional
 from emergentintegrations.llm.chat import LlmChat, UserMessage
+from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
+from fastapi import Request
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -23,6 +25,12 @@ db = client[os.environ['DB_NAME']]
 
 JWT_SECRET = os.environ.get('JWT_SECRET', 'idearadar-secret')
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
+STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
+
+PRICING_TIERS = {
+    "pro": {"amount": 40.00, "label": "Pro"},
+    "business": {"amount": 60.00, "label": "Business"},
+}
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -73,6 +81,17 @@ class UserCreate(BaseModel):
 class UserLogin(BaseModel):
     email: str
     password: str
+
+class PasswordResetRequest(BaseModel):
+    email: str
+
+class PasswordResetConfirm(BaseModel):
+    email: str
+    code: str
+    new_password: str
+
+class ScanTopicRequest(BaseModel):
+    topic: str
 
 # ── Seed Data ─────────────────────────────────────────────────
 SEED_IDEAS = [
@@ -479,6 +498,118 @@ async def login(data: UserLogin):
 async def me(user=Depends(require_user)):
     return {k: v for k, v in user.items() if k not in ["_id", "password_hash"]}
 
+# ── Password Reset ────────────────────────────────────────────
+import random
+import string
+
+@api_router.post("/auth/forgot-password")
+async def forgot_password(data: PasswordResetRequest):
+    user = await db.users.find_one({"email": data.email.lower()})
+    if not user:
+        return {"message": "If this email exists, a reset code has been sent."}
+    code = ''.join(random.choices(string.digits, k=6))
+    await db.password_resets.delete_many({"email": data.email.lower()})
+    await db.password_resets.insert_one({
+        "email": data.email.lower(),
+        "code": code,
+        "created_at": datetime.now(timezone.utc),
+        "expires_at": datetime.now(timezone.utc) + timedelta(minutes=15)
+    })
+    logger.info(f"Password reset code for {data.email}: {code}")
+    return {"message": "If this email exists, a reset code has been sent.", "code": code}
+
+@api_router.post("/auth/reset-password")
+async def reset_password(data: PasswordResetConfirm):
+    reset = await db.password_resets.find_one({
+        "email": data.email.lower(),
+        "code": data.code
+    })
+    if not reset:
+        raise HTTPException(400, "Invalid or expired reset code")
+    expires = reset["expires_at"]
+    if not expires.tzinfo:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) > expires:
+        raise HTTPException(400, "Reset code has expired")
+    await db.users.update_one(
+        {"email": data.email.lower()},
+        {"$set": {"password_hash": hash_password(data.new_password)}}
+    )
+    await db.password_resets.delete_many({"email": data.email.lower()})
+    return {"message": "Password reset successfully"}
+
+# ── Scan Any Topic (AI Research) ──────────────────────────────
+@api_router.post("/ideas/scan-topic")
+async def scan_topic(data: ScanTopicRequest, user=Depends(require_user)):
+    if not user["is_premium"]:
+        raise HTTPException(402, "Upgrade to Pro or Business to use Scan Any Topic")
+    chat = LlmChat(
+        api_key=EMERGENT_LLM_KEY,
+        session_id=f"scan-{uuid.uuid4()}",
+        system_message="You are an expert startup research analyst. You discover validated business opportunities by analyzing real market gaps, complaints, and unmet needs in specific niches."
+    ).with_model("openai", "gpt-4o")
+
+    prompt = f"""Research the niche/topic: "{data.topic}"
+
+Find 3 SPECIFIC, VALIDATED micro-SaaS business opportunities in this space. For each one, provide:
+
+Return ONLY a JSON array with exactly 3 objects, each having these fields:
+- "title": string (specific product name/concept, under 60 chars)
+- "description": string (2-3 sentences about the pain point and opportunity)
+- "category": string (e.g. "Finance", "Developer Tools", "Operations")
+- "pain_intensity": string ("severe" or "moderate")
+- "opportunity_score": number (60-95)
+- "market_score": number (60-95)
+- "competition_score": number (60-95)
+- "revenue_score": number (60-95)
+- "revenue_estimate": string (e.g. "$20K–$80K/mo")
+- "market_size": string (e.g. "$1.2B TAM")
+- "competition_analysis": string (1-2 sentences about existing competitors and the gap)
+- "tags": array of 4-6 relevant keyword strings
+
+Be specific and realistic. Base opportunities on actual market patterns. Return ONLY the JSON array, no markdown formatting."""
+
+    result = await chat.send_message(UserMessage(text=prompt))
+    import json as json_module
+    try:
+        cleaned = result.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        ideas = json_module.loads(cleaned)
+    except Exception:
+        raise HTTPException(500, "Failed to parse AI response. Please try again.")
+
+    saved_ideas = []
+    for idea in ideas[:3]:
+        idea_doc = {
+            "id": f"scan_{uuid.uuid4().hex[:8]}",
+            "title": idea.get("title", ""),
+            "description": idea.get("description", ""),
+            "source": "ai_scan",
+            "source_display": "AI Scan",
+            "category": idea.get("category", "Other"),
+            "pain_intensity": idea.get("pain_intensity", "moderate"),
+            "pain_quote": "",
+            "votes_on_source": 0,
+            "opportunity_score": idea.get("opportunity_score", 70),
+            "market_score": idea.get("market_score", 70),
+            "competition_score": idea.get("competition_score", 70),
+            "revenue_score": idea.get("revenue_score", 70),
+            "revenue_estimate": idea.get("revenue_estimate", "TBD"),
+            "market_size": idea.get("market_size", "TBD"),
+            "trending": False,
+            "upvotes": 0,
+            "tags": idea.get("tags", []),
+            "competition_analysis": idea.get("competition_analysis", ""),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "scanned_by": user["id"],
+            "scan_topic": data.topic
+        }
+        await db.ideas.insert_one({**idea_doc})
+        saved_ideas.append({k: v for k, v in idea_doc.items() if k != "_id"})
+
+    return {"ideas": saved_ideas, "topic": data.topic}
+
 # ── Ideas Routes ──────────────────────────────────────────────
 @api_router.get("/ideas/feed")
 async def get_feed(source: str = "all", category: str = "all", sort: str = "trending", user=Depends(get_user)):
@@ -594,17 +725,96 @@ async def generate_landing_copy(idea_id: str, user=Depends(require_user)):
 
 class UpgradeRequest(BaseModel):
     tier: str = "pro"
+    origin_url: str
 
-@api_router.post("/subscription/upgrade")
-async def upgrade(data: UpgradeRequest, user=Depends(require_user)):
-    if data.tier not in ("pro", "business"):
+@api_router.post("/subscription/checkout")
+async def create_checkout(data: UpgradeRequest, request: Request, user=Depends(require_user)):
+    if data.tier not in PRICING_TIERS:
         raise HTTPException(400, "Invalid tier. Choose 'pro' or 'business'.")
-    await db.users.update_one(
-        {"id": user["id"]},
-        {"$set": {"is_premium": True, "tier": data.tier}}
+    tier_info = PRICING_TIERS[data.tier]
+    origin = data.origin_url.rstrip("/")
+    success_url = f"{origin}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin}/pricing"
+
+    host_url = str(request.base_url).rstrip("/")
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+
+    checkout_req = CheckoutSessionRequest(
+        amount=tier_info["amount"],
+        currency="usd",
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata={"user_id": user["id"], "tier": data.tier, "user_email": user["email"]}
     )
-    tier_label = "Business" if data.tier == "business" else "Pro"
-    return {"success": True, "message": f"Welcome to IdeaRadar {tier_label}!"}
+    session: CheckoutSessionResponse = await stripe_checkout.create_checkout_session(checkout_req)
+
+    await db.payment_transactions.insert_one({
+        "session_id": session.session_id,
+        "user_id": user["id"],
+        "user_email": user["email"],
+        "tier": data.tier,
+        "amount": tier_info["amount"],
+        "currency": "usd",
+        "payment_status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+
+    return {"url": session.url, "session_id": session.session_id}
+
+@api_router.get("/subscription/status/{session_id}")
+async def check_payment_status(session_id: str, request: Request, user=Depends(require_user)):
+    txn = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
+    if not txn:
+        raise HTTPException(404, "Transaction not found")
+
+    host_url = str(request.base_url).rstrip("/")
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    status: CheckoutStatusResponse = await stripe_checkout.get_checkout_status(session_id)
+
+    new_status = status.payment_status
+    await db.payment_transactions.update_one(
+        {"session_id": session_id},
+        {"$set": {"payment_status": new_status, "status": status.status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+
+    if new_status == "paid" and txn.get("payment_status") != "paid":
+        tier = txn["tier"]
+        await db.users.update_one(
+            {"id": txn["user_id"]},
+            {"$set": {"is_premium": True, "tier": tier}}
+        )
+        logger.info(f"User {txn['user_id']} upgraded to {tier}")
+
+    return {"payment_status": new_status, "status": status.status, "tier": txn["tier"]}
+
+@api_router.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    body = await request.body()
+    signature = request.headers.get("Stripe-Signature", "")
+    try:
+        host_url = str(request.base_url).rstrip("/")
+        webhook_url = f"{host_url}/api/webhook/stripe"
+        stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+        event = await stripe_checkout.handle_webhook(body, signature)
+        logger.info(f"Stripe webhook: {event.event_type} for session {event.session_id}")
+
+        if event.payment_status == "paid":
+            txn = await db.payment_transactions.find_one({"session_id": event.session_id})
+            if txn and txn.get("payment_status") != "paid":
+                await db.payment_transactions.update_one(
+                    {"session_id": event.session_id},
+                    {"$set": {"payment_status": "paid", "updated_at": datetime.now(timezone.utc).isoformat()}}
+                )
+                await db.users.update_one(
+                    {"id": txn["user_id"]},
+                    {"$set": {"is_premium": True, "tier": txn["tier"]}}
+                )
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Webhook error: {e}")
+        return {"status": "error"}
 
 @api_router.get("/stats")
 async def get_stats():

@@ -181,6 +181,7 @@ h1, h2, h3, h4 {
 .badge-appstore { background: rgba(10,132,255,0.12); color: #54A8FF; border-color: rgba(10,132,255,0.25); }
 .badge-producthunt { background: rgba(218,85,47,0.12); color: #FF7F60; border-color: rgba(218,85,47,0.25); }
 .badge-indiehackers { background: rgba(15,172,129,0.12); color: #34D9AA; border-color: rgba(15,172,129,0.25); }
+.badge-ai_scan { background: rgba(99,102,241,0.12); color: #818CF8; border-color: rgba(99,102,241,0.25); }
 
 /* Pain intensity */
 .pain-severe { color: #EF4444; }

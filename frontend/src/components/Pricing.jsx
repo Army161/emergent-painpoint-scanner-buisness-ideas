@@ -78,12 +78,16 @@ const Pricing = () => {
     if (user.is_premium && user.tier === tier) { toast.success('You\'re already on this plan!'); return; }
     setLoading(tier);
     try {
-      await apiClient.post('/subscription/upgrade', { tier });
-      setUser(u => ({ ...u, is_premium: true, tier }));
-      toast.success(`Welcome to IdeaRadar ${tier === 'business' ? 'Business' : 'Pro'}! Unlimited access unlocked.`);
-      navigate('/dashboard');
-    } catch { toast.error('Upgrade failed. Please try again.'); }
-    finally { setLoading(null); }
+      const originUrl = window.location.origin;
+      const res = await apiClient.post('/subscription/checkout', { tier, origin_url: originUrl });
+      if (res.data.url) {
+        window.location.href = res.data.url;
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to start checkout. Please try again.');
+    } finally {
+      setLoading(null);
+    }
   };
 
   const getUserTier = () => {

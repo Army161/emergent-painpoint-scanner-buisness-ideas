@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, SlidersHorizontal, TrendingUp, Clock, Zap, RefreshCw } from 'lucide-react';
-import { apiClient } from '../App';
+import { Search, SlidersHorizontal, TrendingUp, Clock, Zap, RefreshCw, Sparkles, Loader2 } from 'lucide-react';
+import { apiClient, useAuth } from '../App';
 import Navbar from './Navbar';
 import IdeaCard from './IdeaCard';
 import { toast } from 'sonner';
@@ -13,6 +13,7 @@ const SOURCES = [
   { key: 'appstore', label: 'App Store' },
   { key: 'producthunt', label: 'Product Hunt' },
   { key: 'indiehackers', label: 'Indie Hackers' },
+  { key: 'ai_scan', label: 'AI Scan' },
 ];
 
 const CATEGORIES = [
@@ -28,6 +29,7 @@ const SORTS = [
 ];
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const [ideas, setIdeas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [source, setSource] = useState('all');
@@ -35,6 +37,8 @@ const Dashboard = () => {
   const [sort, setSort] = useState('trending');
   const [search, setSearch] = useState('');
   const [stats, setStats] = useState({});
+  const [scanTopic, setScanTopic] = useState('');
+  const [scanning, setScanning] = useState(false);
 
   const fetchIdeas = useCallback(async () => {
     setLoading(true);
@@ -55,6 +59,23 @@ const Dashboard = () => {
 
   const handleSaveToggle = (ideaId, saved) => {
     setIdeas(prev => prev.map(i => i.id === ideaId ? { ...i, is_saved: saved } : i));
+  };
+
+  const handleScanTopic = async () => {
+    if (!scanTopic.trim()) return toast.error('Enter a topic to scan');
+    if (!user?.is_premium) return toast.error('Upgrade to Pro or Business to use Scan Any Topic');
+    setScanning(true);
+    try {
+      const res = await apiClient.post('/ideas/scan-topic', { topic: scanTopic.trim() });
+      toast.success(`Found ${res.data.ideas.length} opportunities in "${res.data.topic}"!`);
+      setScanTopic('');
+      fetchIdeas();
+    } catch (err) {
+      if (err.response?.status === 402) toast.error('Upgrade to Pro to use Scan Any Topic');
+      else toast.error('Scan failed. Try again.');
+    } finally {
+      setScanning(false);
+    }
   };
 
   const filtered = ideas.filter(i =>
@@ -90,6 +111,25 @@ const Dashboard = () => {
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: 'var(--text)', fontFamily: 'Plus Jakarta Sans' }}>Opportunity Feed</h1>
           <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--text-medium)' }}>AI-validated pain points mined from 6 sources. Each one is a business waiting to be built.</p>
+        </div>
+
+        {/* Scan Any Topic */}
+        <div className="card" style={{ padding: '16px 20px', marginBottom: 20, display: 'flex', gap: 12, alignItems: 'center' }}>
+          <Sparkles size={18} color="#818CF8" style={{ flexShrink: 0 }} />
+          <input data-testid="scan-topic-input" value={scanTopic} onChange={e => setScanTopic(e.target.value)}
+            placeholder={user?.is_premium ? "Scan any topic — e.g. 'pet tech', 'remote work tools', 'crypto compliance'..." : "Upgrade to Pro to scan any topic..."}
+            disabled={!user?.is_premium || scanning}
+            onKeyDown={e => e.key === 'Enter' && handleScanTopic()}
+            style={{ flex: 1, padding: '8px 0', border: 'none', background: 'transparent', color: 'var(--text)', fontSize: 14, outline: 'none', fontFamily: 'Inter', opacity: user?.is_premium ? 1 : 0.5 }}
+          />
+          <button data-testid="scan-topic-btn" onClick={handleScanTopic} disabled={scanning || !user?.is_premium}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: 'none', background: user?.is_premium ? '#6366F1' : 'var(--surface-hi)', color: user?.is_premium ? '#fff' : 'var(--subtle)', fontSize: 13, fontWeight: 600, cursor: scanning || !user?.is_premium ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s' }}
+          >
+            {scanning ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />Scanning...</> : 'Scan Topic'}
+          </button>
+          {!user?.is_premium && (
+            <span style={{ fontSize: 11, color: '#818CF8', fontWeight: 600, whiteSpace: 'nowrap' }}>PRO</span>
+          )}
         </div>
 
         {/* Filters row */}

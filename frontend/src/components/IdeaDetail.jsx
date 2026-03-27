@@ -8,7 +8,8 @@ import { toast } from 'sonner';
 
 const SOURCE_CLS = {
   reddit: 'badge-reddit', twitter: 'badge-twitter', linkedin: 'badge-linkedin',
-  appstore: 'badge-appstore', producthunt: 'badge-producthunt', indiehackers: 'badge-indiehackers'
+  appstore: 'badge-appstore', producthunt: 'badge-producthunt', indiehackers: 'badge-indiehackers',
+  ai_scan: 'badge-ai_scan'
 };
 
 const TypewriterContent = ({ text }) => {
