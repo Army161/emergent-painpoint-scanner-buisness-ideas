@@ -98,7 +98,7 @@ const LandingPage = () => {
             <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Radar size={16} color="#fff" />
             </div>
-            <span style={{ fontSize: 16, fontWeight: 700, fontFamily: 'Plus Jakarta Sans' }}>IdeaRadar</span>
+            <span style={{ fontSize: 16, fontWeight: 700, fontFamily: 'Plus Jakarta Sans' }}>PainSignal</span>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <Link to="/pricing" style={{ fontSize: 14, color: 'var(--text-medium)', textDecoration: 'none', fontWeight: 500 }}>Pricing</Link>
@@ -157,7 +157,7 @@ const LandingPage = () => {
               {[
                 { value: count.ideas.toLocaleString() + '+', label: 'Pain points tracked' },
                 { value: count.briefs.toLocaleString() + '+', label: 'Briefs generated' },
-                { value: count.users.toLocaleString() + '+', label: 'Founders using IdeaRadar' },
+                { value: count.users.toLocaleString() + '+', label: 'Founders using PainSignal' },
               ].map(({ value, label }) => (
                 <div key={label}>
                   <div className="mono" style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{value}</div>
@@ -299,7 +299,7 @@ const LandingPage = () => {
             <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 400, height: 400, background: 'radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
             <Radar size={36} color="#818CF8" style={{ marginBottom: 16 }} />
             <h2 style={{ margin: '0 0 12px', fontSize: 28, fontWeight: 800, fontFamily: 'Plus Jakarta Sans' }}>Ready to find your next big idea?</h2>
-            <p style={{ margin: '0 0 28px', fontSize: 15, color: 'var(--muted)' }}>Join 1,800+ founders using IdeaRadar to find validated opportunities. First business brief is free.</p>
+            <p style={{ margin: '0 0 28px', fontSize: 15, color: 'var(--muted)' }}>Join 1,800+ founders using PainSignal to find validated opportunities. First business brief is free.</p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Link to="/auth" data-testid="footer-cta-btn"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 28px', borderRadius: 10, background: '#6366F1', color: '#fff', textDecoration: 'none', fontSize: 15, fontWeight: 700, boxShadow: '0 0 30px rgba(99,102,241,0.4)', fontFamily: 'Plus Jakarta Sans' }}
@@ -322,7 +322,7 @@ const LandingPage = () => {
           <div style={{ width: 20, height: 20, borderRadius: 5, background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Radar size={11} color="#fff" />
           </div>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--subtle)', fontFamily: 'Plus Jakarta Sans' }}>IdeaRadar</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--subtle)', fontFamily: 'Plus Jakarta Sans' }}>PainSignal</span>
         </div>
         <p style={{ margin: 0, fontSize: 12, color: 'var(--subtle)' }}>The Bloomberg Terminal for startup ideas. Built for founders who are serious.</p>
       </footer>

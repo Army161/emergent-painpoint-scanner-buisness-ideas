@@ -27,7 +27,7 @@ const Navbar = () => {
           <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Radar size={16} color="#fff" />
           </div>
-          <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', fontFamily: 'Plus Jakarta Sans' }}>IdeaRadar</span>
+          <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', fontFamily: 'Plus Jakarta Sans' }}>PainSignal</span>
         </Link>
 
         {user && (

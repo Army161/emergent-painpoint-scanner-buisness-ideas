@@ -97,7 +97,7 @@ const AuthPage = () => {
             {mode === 'forgot' || mode === 'reset' ? <KeyRound size={24} color="#fff" /> : <Radar size={24} color="#fff" />}
           </div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text)', fontFamily: 'Plus Jakarta Sans' }}>
-            {mode === 'forgot' ? 'Forgot Password' : mode === 'reset' ? 'Reset Password' : 'IdeaRadar'}
+            {mode === 'forgot' ? 'Forgot Password' : mode === 'reset' ? 'Reset Password' : 'PainSignal'}
           </h1>
           <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--text-medium)' }}>
             {mode === 'forgot' ? 'Enter your email to receive a reset code' : mode === 'reset' ? 'Enter the code and your new password' : 'The Bloomberg Terminal for startup ideas'}

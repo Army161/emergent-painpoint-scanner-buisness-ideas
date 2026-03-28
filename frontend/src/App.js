@@ -21,7 +21,7 @@ export const useTheme = () => useContext(ThemeContext);
 
 export const apiClient = axios.create({ baseURL: API_BASE });
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('idearadar_token');
+  const token = localStorage.getItem('painsignal_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -35,21 +35,21 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [theme, setTheme] = useState(() => localStorage.getItem('idearadar_theme') || 'dark');
+  const [theme, setTheme] = useState(() => localStorage.getItem('painsignal_theme') || 'dark');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('idearadar_theme', theme);
+    localStorage.setItem('painsignal_theme', theme);
   }, [theme]);
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 
   useEffect(() => {
-    const token = localStorage.getItem('idearadar_token');
+    const token = localStorage.getItem('painsignal_token');
     if (token) {
       apiClient.get('/auth/me')
         .then(res => setUser(res.data))
-        .catch(() => localStorage.removeItem('idearadar_token'))
+        .catch(() => localStorage.removeItem('painsignal_token'))
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -57,12 +57,12 @@ function App() {
   }, []);
 
   const login = (token, userData) => {
-    localStorage.setItem('idearadar_token', token);
+    localStorage.setItem('painsignal_token', token);
     setUser(userData);
   };
 
   const logout = () => {
-    localStorage.removeItem('idearadar_token');
+    localStorage.removeItem('painsignal_token');
     setUser(null);
   };
 

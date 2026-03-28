@@ -273,7 +273,7 @@ const IdeaDetail = () => {
               {brief && user?.is_premium && (
                 <button data-testid="export-pdf-btn" onClick={() => {
                   const API = process.env.REACT_APP_BACKEND_URL;
-                  const token = localStorage.getItem('idearadar_token');
+                  const token = localStorage.getItem('painsignal_token');
                   window.open(`${API}/api/ideas/${id}/export-pdf?token=${token}`, '_blank');
                 }}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px', borderRadius: 10, border: '1px solid rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.08)', color: '#22C55E', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
