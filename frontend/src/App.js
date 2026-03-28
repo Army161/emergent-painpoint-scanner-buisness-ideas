@@ -8,6 +8,7 @@ import IdeaDetail from './components/IdeaDetail';
 import SavedIdeas from './components/SavedIdeas';
 import Pricing from './components/Pricing';
 import PaymentSuccess from './components/PaymentSuccess';
+import Analytics from './components/Analytics';
 import { Toaster } from 'sonner';
 import './App.css';
 
@@ -84,6 +85,7 @@ function App() {
           <Route path="/saved" element={<ProtectedRoute><SavedIdeas /></ProtectedRoute>} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/payment/success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
+          <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>

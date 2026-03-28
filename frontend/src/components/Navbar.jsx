@@ -1,7 +1,7 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, useTheme } from '../App';
-import { Radar, BookmarkIcon, LayoutDashboard, LogOut, ChevronDown, Zap, Sun, Moon } from 'lucide-react';
+import { Radar, BookmarkIcon, LayoutDashboard, LogOut, ChevronDown, Zap, Sun, Moon, BarChart3 } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -87,6 +87,9 @@ const Navbar = () => {
                     <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{user.name}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-medium)' }}>{user.email}</div>
                   </div>
+                  <Link to="/analytics" data-testid="nav-analytics" onClick={() => setMenuOpen(false)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', borderRadius: 6, textDecoration: 'none', color: 'var(--text)', fontSize: 14 }}
+                  ><BarChart3 size={14} />Dashboard</Link>
                   <button data-testid="logout-btn" onClick={handleLogout}
                     style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', color: '#EF4444', fontSize: 14 }}
                   ><LogOut size={14} />Sign out</button>

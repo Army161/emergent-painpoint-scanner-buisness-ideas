@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Bookmark, ArrowUp, Zap, FileText, Copy, Check, ChevronRight, TrendingUp, Users, DollarSign, Target } from 'lucide-react';
+import { ArrowLeft, Bookmark, ArrowUp, Zap, FileText, Copy, Check, ChevronRight, TrendingUp, Users, DollarSign, Target, Download } from 'lucide-react';
 import { apiClient, useAuth } from '../App';
 import Navbar from './Navbar';
 import OpportunityRing from './OpportunityRing';
@@ -265,11 +265,22 @@ const IdeaDetail = () => {
                 {generating.copy ? 'Generating...' : copy ? 'Regenerate Copy' : 'Generate Landing Copy'}
               </button>
               <button data-testid="save-idea-btn" onClick={handleSave}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px', borderRadius: 10, border: `1px solid ${saved ? 'rgba(99,102,241,0.4)' : '#27272A'}`, background: saved ? 'rgba(99,102,241,0.1)' : 'transparent', color: saved ? '#818CF8' : 'var(--muted)', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px', borderRadius: 10, border: `1px solid ${saved ? 'rgba(99,102,241,0.4)' : 'var(--border)'}`, background: saved ? 'rgba(99,102,241,0.1)' : 'transparent', color: saved ? '#818CF8' : 'var(--muted)', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
               >
                 <Bookmark size={16} fill={saved ? '#818CF8' : 'none'} />
                 {saved ? 'Saved' : 'Save Idea'}
               </button>
+              {brief && user?.is_premium && (
+                <button data-testid="export-pdf-btn" onClick={() => {
+                  const API = process.env.REACT_APP_BACKEND_URL;
+                  const token = localStorage.getItem('idearadar_token');
+                  window.open(`${API}/api/ideas/${id}/export-pdf?token=${token}`, '_blank');
+                }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px', borderRadius: 10, border: '1px solid rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.08)', color: '#22C55E', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+                >
+                  <Download size={16} />Export as PDF
+                </button>
+              )}
             </div>
 
             {!user?.is_premium && (
