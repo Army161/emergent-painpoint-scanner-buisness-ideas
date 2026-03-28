@@ -51,6 +51,11 @@ const IdeaCard = ({ idea, onSaveToggle }) => {
                 <TrendingUp size={10} /> HOT
               </span>
             )}
+            {idea.live && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, color: '#1DA1F2', fontWeight: 600, background: 'rgba(29,161,242,0.1)', padding: '1px 6px', borderRadius: 99, border: '1px solid rgba(29,161,242,0.2)' }}>
+                LIVE
+              </span>
+            )}
           </div>
           <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: 'var(--surface-hover)', color: 'var(--muted)', border: '1px solid var(--border)' }}>
             {idea.category}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, SlidersHorizontal, TrendingUp, Clock, Zap, RefreshCw, Sparkles, Loader2 } from 'lucide-react';
+import { Search, SlidersHorizontal, TrendingUp, Clock, Zap, RefreshCw, Sparkles, Loader2, Radio } from 'lucide-react';
 import { apiClient, useAuth } from '../App';
 import Navbar from './Navbar';
 import IdeaCard from './IdeaCard';
@@ -39,6 +39,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState({});
   const [scanTopic, setScanTopic] = useState('');
   const [scanning, setScanning] = useState(false);
+  const [scraping, setScraping] = useState(false);
 
   const fetchIdeas = useCallback(async () => {
     setLoading(true);
@@ -75,6 +76,25 @@ const Dashboard = () => {
       else toast.error('Scan failed. Try again.');
     } finally {
       setScanning(false);
+    }
+  };
+
+  const handleScrapeX = async () => {
+    if (!user?.is_premium) return toast.error('Upgrade to Pro to pull live data from X');
+    setScraping(true);
+    try {
+      const res = await apiClient.post('/scrape/x');
+      if (res.data.count > 0) {
+        toast.success(`Found ${res.data.count} live pain points from X!`);
+        fetchIdeas();
+      } else {
+        toast.info('No new pain points found this cycle. Try again later.');
+      }
+    } catch (err) {
+      if (err.response?.status === 402) toast.error('Upgrade to Pro for live X scraping');
+      else toast.error(err.response?.data?.detail || 'X scrape failed. Try again.');
+    } finally {
+      setScraping(false);
     }
   };
 
@@ -130,6 +150,27 @@ const Dashboard = () => {
           {!user?.is_premium && (
             <span style={{ fontSize: 11, color: '#818CF8', fontWeight: 600, whiteSpace: 'nowrap' }}>PRO</span>
           )}
+        </div>
+
+        {/* Live X Scrape */}
+        <div className="card" style={{ padding: '12px 20px', marginBottom: 20, display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Radio size={16} color="#1DA1F2" style={{ flexShrink: 0 }} />
+            <div>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Live Pain Point Discovery</span>
+              <span style={{ fontSize: 12, color: 'var(--text-medium)', marginLeft: 8 }}>Pull real complaints from X/Twitter in real-time</span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {!user?.is_premium && (
+              <span style={{ fontSize: 11, color: '#818CF8', fontWeight: 600, whiteSpace: 'nowrap' }}>PRO</span>
+            )}
+            <button data-testid="scrape-x-btn" onClick={handleScrapeX} disabled={scraping || !user?.is_premium}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: 'none', background: user?.is_premium ? '#1DA1F2' : 'var(--surface-hi)', color: user?.is_premium ? '#fff' : 'var(--subtle)', fontSize: 13, fontWeight: 600, cursor: scraping || !user?.is_premium ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s' }}
+            >
+              {scraping ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />Scanning X...</> : 'Scrape X Now'}
+            </button>
+          </div>
         </div>
 
         {/* Filters row */}
