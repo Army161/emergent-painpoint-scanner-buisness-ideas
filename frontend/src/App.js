@@ -9,6 +9,7 @@ import SavedIdeas from './components/SavedIdeas';
 import Pricing from './components/Pricing';
 import PaymentSuccess from './components/PaymentSuccess';
 import Analytics from './components/Analytics';
+import SharedIdea from './components/SharedIdea';
 import { Toaster } from 'sonner';
 import './App.css';
 
@@ -86,6 +87,7 @@ function App() {
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/payment/success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
           <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+          <Route path="/shared/:shareId" element={<SharedIdea />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>

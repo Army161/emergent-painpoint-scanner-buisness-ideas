@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Bookmark, ArrowUp, Zap, FileText, Copy, Check, ChevronRight, TrendingUp, Users, DollarSign, Target, Download } from 'lucide-react';
+import { ArrowLeft, Bookmark, ArrowUp, Zap, FileText, Copy, Check, ChevronRight, TrendingUp, Users, DollarSign, Target, Download, Share2 } from 'lucide-react';
 import { apiClient, useAuth } from '../App';
 import Navbar from './Navbar';
 import OpportunityRing from './OpportunityRing';
@@ -281,6 +281,18 @@ const IdeaDetail = () => {
                   <Download size={16} />Export as PDF
                 </button>
               )}
+              <button data-testid="share-idea-btn" onClick={async () => {
+                try {
+                  const res = await apiClient.post(`/ideas/${id}/share`);
+                  const shareUrl = `${window.location.origin}/shared/${res.data.share_id}`;
+                  await navigator.clipboard.writeText(shareUrl);
+                  toast.success('Share link copied to clipboard!');
+                } catch { toast.error('Failed to create share link'); }
+              }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px', borderRadius: 10, border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                <Share2 size={16} />Share Idea
+              </button>
             </div>
 
             {!user?.is_premium && (

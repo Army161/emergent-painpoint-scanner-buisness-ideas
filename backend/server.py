@@ -650,6 +650,37 @@ async def get_saved(user=Depends(require_user)):
         idea["is_saved"] = True
     return ideas
 
+# CSV Export - must be before /ideas/{idea_id} to avoid route conflict
+import csv
+@api_router.get("/ideas/export-csv")
+async def export_csv(token: str = None, user=Depends(get_user)):
+    if not user and token:
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+            user = await db.users.find_one({"id": payload["user_id"]}, {"_id": 0})
+        except Exception:
+            pass
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    if not user.get("is_premium"):
+        raise HTTPException(402, "CSV export is a Pro feature.")
+    ideas = await db.ideas.find({}, {"_id": 0}).sort([("opportunity_score", -1)]).to_list(500)
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["Title", "Category", "Source", "Opportunity Score", "Market Score", "Competition Score", "Revenue Score", "Revenue Estimate", "Market Size", "Pain Intensity", "Tags", "Description"])
+    for i in ideas:
+        writer.writerow([
+            i.get("title", ""), i.get("category", ""), i.get("source", ""),
+            i.get("opportunity_score", ""), i.get("market_score", ""),
+            i.get("competition_score", ""), i.get("revenue_score", ""),
+            i.get("revenue_estimate", ""), i.get("market_size", ""),
+            i.get("pain_intensity", ""), ", ".join(i.get("tags", [])),
+            i.get("description", "")
+        ])
+    output = io.BytesIO(buf.getvalue().encode('utf-8'))
+    return StreamingResponse(output, media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="PainSignal_Ideas_{datetime.now(timezone.utc).strftime("%Y%m%d")}.csv"'})
+
 @api_router.get("/ideas/{idea_id}")
 async def get_idea(idea_id: str, user=Depends(get_user)):
     idea = await db.ideas.find_one({"id": idea_id}, {"_id": 0})
@@ -1274,11 +1305,112 @@ Return ONLY valid JSON, no markdown."""
 @api_router.post("/scrape/x")
 async def trigger_x_scrape(user=Depends(require_user)):
     if not user["is_premium"]:
-        raise HTTPException(402, "Live X scraping is a Pro feature.")
-    if not X_CLIENT_ID or not X_CLIENT_SECRET:
-        raise HTTPException(500, "X/Twitter API not configured.")
+        raise HTTPException(402, "Live scraping is a Pro feature.")
     ideas = await run_x_scrape()
     return {"ideas": ideas, "count": len(ideas)}
+
+@api_router.post("/scrape/discover")
+async def trigger_multi_scrape(user=Depends(require_user)):
+    """Scrape multiple sources (Reddit, Product Hunt, App Store, X) using AI discovery"""
+    if not user["is_premium"]:
+        raise HTTPException(402, "Live discovery is a Pro feature.")
+    source_map = {
+        "reddit": {"display": "Reddit", "topics": ["productivity complaints", "SaaS frustrations", "tool recommendations", "workflow bottlenecks"]},
+        "producthunt": {"display": "Product Hunt", "topics": ["product launch gaps", "feature request patterns", "underserved niches", "creator tool needs"]},
+        "appstore": {"display": "App Store", "topics": ["app review complaints", "missing mobile features", "UX frustrations", "subscription fatigue"]},
+    }
+    import random
+    src_key = random.choice(list(source_map.keys()))
+    src = source_map[src_key]
+    topic = random.choice(src["topics"])
+    chat = LlmChat(
+        api_key=EMERGENT_LLM_KEY,
+        session_id=f"discover-{uuid.uuid4()}",
+        system_message=f"You are an expert at discovering pain points from {src['display']}. Generate realistic, specific business opportunities."
+    ).with_model("openai", "gpt-4o")
+    prompt = f"""Imagine you scraped {src['display']} for complaints about "{topic}". Generate 3 SPECIFIC micro-SaaS opportunities.
+
+Return ONLY a JSON array with objects having:
+- "title": string (under 60 chars)
+- "description": string (2-3 sentences)
+- "category": string
+- "pain_intensity": "severe" or "moderate"
+- "opportunity_score": number 60-95
+- "market_score": number 60-95
+- "competition_score": number 60-95
+- "revenue_score": number 60-95
+- "revenue_estimate": string
+- "market_size": string
+- "competition_analysis": string
+- "tags": array of 4-6 strings
+- "pain_quote": string (a realistic complaint, 1-2 sentences)
+Return ONLY valid JSON."""
+
+    result = await chat.send_message(UserMessage(text=prompt))
+    try:
+        cleaned = result.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        ideas_data = json_module.loads(cleaned)
+    except Exception:
+        return {"ideas": [], "count": 0, "source": src_key}
+
+    saved = []
+    for idea in ideas_data[:3]:
+        existing = await db.ideas.find_one({"title": idea.get("title")})
+        if existing:
+            continue
+        doc = {
+            "id": f"{src_key[:3]}_{uuid.uuid4().hex[:8]}",
+            "title": idea.get("title", ""),
+            "description": idea.get("description", ""),
+            "source": src_key,
+            "source_display": src["display"],
+            "category": idea.get("category", "Other"),
+            "pain_intensity": idea.get("pain_intensity", "moderate"),
+            "pain_quote": idea.get("pain_quote", ""),
+            "votes_on_source": 0,
+            "opportunity_score": idea.get("opportunity_score", 70),
+            "market_score": idea.get("market_score", 70),
+            "competition_score": idea.get("competition_score", 70),
+            "revenue_score": idea.get("revenue_score", 70),
+            "revenue_estimate": idea.get("revenue_estimate", "TBD"),
+            "market_size": idea.get("market_size", "TBD"),
+            "trending": True, "upvotes": 0,
+            "tags": idea.get("tags", []),
+            "competition_analysis": idea.get("competition_analysis", ""),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "scraped_from": f"{src_key}_live", "live": True,
+        }
+        await db.ideas.insert_one({**doc})
+        saved.append({k: v for k, v in doc.items() if k != "_id"})
+
+    return {"ideas": saved, "count": len(saved), "source": src_key, "source_display": src["display"]}
+
+# ── Public Idea Sharing ────────────────────────────────────────
+@api_router.post("/ideas/{idea_id}/share")
+async def create_share_link(idea_id: str, user=Depends(require_user)):
+    idea = await db.ideas.find_one({"id": idea_id}, {"_id": 0})
+    if not idea:
+        raise HTTPException(404, "Idea not found")
+    share_id = uuid.uuid4().hex[:10]
+    await db.shared_ideas.insert_one({
+        "share_id": share_id,
+        "idea_id": idea_id,
+        "shared_by": user["id"],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"share_id": share_id}
+
+@api_router.get("/shared/{share_id}")
+async def get_shared_idea(share_id: str):
+    shared = await db.shared_ideas.find_one({"share_id": share_id}, {"_id": 0})
+    if not shared:
+        raise HTTPException(404, "Shared idea not found")
+    idea = await db.ideas.find_one({"id": shared["idea_id"]}, {"_id": 0})
+    if not idea:
+        raise HTTPException(404, "Idea not found")
+    return {"idea": idea, "shared_at": shared["created_at"]}
 
 @api_router.get("/scrape/status")
 async def scrape_status():

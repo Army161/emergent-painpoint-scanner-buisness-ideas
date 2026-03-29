@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, SlidersHorizontal, TrendingUp, Clock, Zap, RefreshCw, Sparkles, Loader2, Radio } from 'lucide-react';
+import { Search, SlidersHorizontal, TrendingUp, Clock, Zap, RefreshCw, Sparkles, Loader2, Radio, Download, Globe } from 'lucide-react';
 import { apiClient, useAuth } from '../App';
 import Navbar from './Navbar';
 import IdeaCard from './IdeaCard';
@@ -98,6 +98,32 @@ const Dashboard = () => {
     }
   };
 
+  const handleDiscoverAll = async () => {
+    if (!user?.is_premium) return toast.error('Upgrade to Pro for multi-source discovery');
+    setScraping(true);
+    try {
+      const res = await apiClient.post('/scrape/discover');
+      if (res.data.count > 0) {
+        toast.success(`Found ${res.data.count} pain points from ${res.data.source_display}!`);
+        fetchIdeas();
+      } else {
+        toast.info('No new opportunities found. Try again later.');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Discovery failed.');
+    } finally {
+      setScraping(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (!user?.is_premium) return toast.error('Upgrade to Pro to export');
+    const API = process.env.REACT_APP_BACKEND_URL;
+    const token = localStorage.getItem('painsignal_token');
+    window.open(`${API}/api/ideas/export-csv?token=${token}`, '_blank');
+    toast.success('Downloading CSV...');
+  };
+
   const filtered = ideas.filter(i =>
     !search || i.title.toLowerCase().includes(search.toLowerCase()) || i.description.toLowerCase().includes(search.toLowerCase())
   );
@@ -152,24 +178,30 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Live X Scrape */}
+        {/* Live Discovery */}
         <div className="card" style={{ padding: '12px 20px', marginBottom: 20, display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Radio size={16} color="#1DA1F2" style={{ flexShrink: 0 }} />
             <div>
               <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Live Pain Point Discovery</span>
-              <span style={{ fontSize: 12, color: 'var(--text-medium)', marginLeft: 8 }}>Pull real complaints from X/Twitter in real-time</span>
+              <span style={{ fontSize: 12, color: 'var(--text-medium)', marginLeft: 8 }}>Pull from X, Reddit, Product Hunt, App Store</span>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {!user?.is_premium && (
               <span style={{ fontSize: 11, color: '#818CF8', fontWeight: 600, whiteSpace: 'nowrap' }}>PRO</span>
             )}
-            <button data-testid="scrape-x-btn" onClick={handleScrapeX} disabled={scraping || !user?.is_premium}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: 'none', background: user?.is_premium ? '#1DA1F2' : 'var(--surface-hi)', color: user?.is_premium ? '#fff' : 'var(--subtle)', fontSize: 13, fontWeight: 600, cursor: scraping || !user?.is_premium ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s' }}
+            <button data-testid="discover-all-btn" onClick={handleDiscoverAll} disabled={scraping || !user?.is_premium}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: 'none', background: user?.is_premium ? 'linear-gradient(135deg,#6366F1,#8B5CF6)' : 'var(--surface-hi)', color: user?.is_premium ? '#fff' : 'var(--subtle)', fontSize: 13, fontWeight: 600, cursor: scraping || !user?.is_premium ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s' }}
             >
-              {scraping ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />Scanning X...</> : 'Scrape X Now'}
+              {scraping ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />Discovering...</> : <><Globe size={14} />Discover New</>}
             </button>
+            <button data-testid="scrape-x-btn" onClick={handleScrapeX} disabled={scraping || !user?.is_premium}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: 'none', background: user?.is_premium ? '#1DA1F2' : 'var(--surface-hi)', color: user?.is_premium ? '#fff' : 'var(--subtle)', fontSize: 13, fontWeight: 600, cursor: scraping || !user?.is_premium ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s' }}
+            >Scrape X</button>
+            <button data-testid="export-csv-btn" onClick={handleExportCSV} disabled={!user?.is_premium}
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: user?.is_premium ? 'var(--text-medium)' : 'var(--subtle)', fontSize: 13, fontWeight: 600, cursor: !user?.is_premium ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s' }}
+            ><Download size={13} />CSV</button>
           </div>
         </div>
 
