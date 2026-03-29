@@ -285,8 +285,12 @@ const IdeaDetail = () => {
                 try {
                   const res = await apiClient.post(`/ideas/${id}/share`);
                   const shareUrl = `${window.location.origin}/shared/${res.data.share_id}`;
-                  await navigator.clipboard.writeText(shareUrl);
-                  toast.success('Share link copied to clipboard!');
+                  try {
+                    await navigator.clipboard.writeText(shareUrl);
+                    toast.success('Share link copied to clipboard!');
+                  } catch {
+                    toast.success(`Share link: ${shareUrl}`);
+                  }
                 } catch { toast.error('Failed to create share link'); }
               }}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px', borderRadius: 10, border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
