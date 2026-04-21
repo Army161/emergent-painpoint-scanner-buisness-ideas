@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, SlidersHorizontal, TrendingUp, Clock, Zap, RefreshCw, Sparkles, Loader2, Radio, Download, Globe } from 'lucide-react';
+import { Search, SlidersHorizontal, TrendingUp, Clock, Zap, RefreshCw, Sparkles, Loader2, Radio, Download, Globe, Lock } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { apiClient, useAuth } from '../App';
 import Navbar from './Navbar';
 import IdeaCard from './IdeaCard';
@@ -276,11 +277,31 @@ const Dashboard = () => {
           </div>
         ) : (
           <div data-testid="ideas-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
-            {filtered.map((idea, i) => (
-              <div key={idea.id} className="animate-fade-up" style={{ animationDelay: `${i * 40}ms`, opacity: 0 }}>
-                <IdeaCard idea={idea} onSaveToggle={handleSaveToggle} />
-              </div>
-            ))}
+            {filtered.map((idea, i) => {
+              const FREE_LIMIT = 5;
+              const isLocked = !user?.is_premium && i >= FREE_LIMIT;
+              return (
+                <div key={idea.id} className="animate-fade-up" style={{ animationDelay: `${i * 40}ms`, opacity: 0, position: 'relative' }}>
+                  {isLocked ? (
+                    <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden' }}>
+                      <div style={{ filter: 'blur(8px)', pointerEvents: 'none', userSelect: 'none' }}>
+                        <IdeaCard idea={idea} onSaveToggle={handleSaveToggle} />
+                      </div>
+                      <Link to="/pricing" data-testid={`locked-idea-${i}`} style={{
+                        position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
+                        background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)', borderRadius: 12, textDecoration: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                      }}>
+                        <Lock size={22} color="#818CF8" />
+                        <span style={{ fontSize: 14, fontWeight: 700, color: '#fff', fontFamily: 'Plus Jakarta Sans' }}>Unlock with Pro</span>
+                        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>See all {filtered.length} opportunities</span>
+                      </Link>
+                    </div>
+                  ) : (
+                    <IdeaCard idea={idea} onSaveToggle={handleSaveToggle} />
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
