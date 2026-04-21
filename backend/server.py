@@ -29,6 +29,7 @@ EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
 X_CLIENT_ID = os.environ.get('X_CLIENT_ID')
 X_CLIENT_SECRET = os.environ.get('X_CLIENT_SECRET')
+XAI_API_KEY = os.environ.get('XAI_API_KEY')
 
 PRICING_TIERS = {
     "pro": {"amount": 40.00, "label": "Pro"},
@@ -1104,179 +1105,44 @@ Make every word earn its place. Specific beats generic. Always."""
 
     return await chat.send_message(UserMessage(text=prompt))
 
-# ── X/Twitter Live Scraping ────────────────────────────────────
+# ── X/Twitter Live Scraping via xAI Grok ──────────────────────
 import httpx
 import base64
 import asyncio
 import json as json_module
+import random
 
 PAIN_QUERIES = [
-    '"frustrated with" software -is:retweet lang:en',
-    '"wish there was" app OR tool -is:retweet lang:en',
-    '"why isn\'t there" a way to -is:retweet lang:en',
-    '"someone should build" -is:retweet lang:en',
-    '"hate using" app OR software OR tool -is:retweet lang:en',
-    '"broken feature" OR "missing feature" -is:retweet lang:en',
-    '"pain point" SaaS OR startup -is:retweet lang:en',
-    '"would pay for" app OR tool OR software -is:retweet lang:en',
+    "people frustrated with software tools, complaining about missing features or broken UX",
+    "users saying 'wish there was an app' or 'someone should build' a tool for a specific need",
+    "startup founders complaining about expensive or clunky SaaS tools",
+    "freelancers and creators struggling with workflow, invoicing, or client management",
+    "developers complaining about developer experience, CI/CD, testing, or deployment tools",
+    "small business owners frustrated with operations, scheduling, or inventory management",
+    "people expressing subscription fatigue or wanting simpler alternatives to complex software",
+    "remote workers complaining about collaboration, async communication, or productivity tools",
 ]
 
-async def get_x_bearer_token():
-    if not X_CLIENT_ID or not X_CLIENT_SECRET:
+async def grok_x_search(query: str):
+    """Use xAI Grok API with x_search tool to find real pain points on X/Twitter"""
+    if not XAI_API_KEY:
         return None
-    creds = base64.b64encode(f"{X_CLIENT_ID}:{X_CLIENT_SECRET}".encode()).decode()
-    async with httpx.AsyncClient() as client:
-        # Try new X API v2 endpoint first
+    async with httpx.AsyncClient(timeout=60) as client:
         resp = await client.post(
-            "https://api.x.com/2/oauth2/token",
-            headers={"Authorization": f"Basic {creds}", "Content-Type": "application/x-www-form-urlencoded"},
-            data={"grant_type": "client_credentials"}
-        )
-        if resp.status_code == 200:
-            return resp.json().get("access_token")
-        # Fallback to legacy endpoint
-        resp = await client.post(
-            "https://api.x.com/oauth2/token",
-            headers={"Authorization": f"Basic {creds}", "Content-Type": "application/x-www-form-urlencoded"},
-            data={"grant_type": "client_credentials"}
-        )
-        if resp.status_code == 200:
-            return resp.json().get("access_token")
-        logger.error(f"X bearer token error: {resp.status_code} {resp.text}")
-        return None
+            "https://api.x.ai/v1/responses",
+            headers={"Authorization": f"Bearer {XAI_API_KEY}", "Content-Type": "application/json"},
+            json={
+                "model": "grok-3-fast",
+                "tools": [{"type": "x_search"}],
+                "input": [{"role": "user", "content": f"""Search X/Twitter for: {query}
 
-async def search_x_tweets(query: str, max_results: int = 10):
-    token = await get_x_bearer_token()
-    if not token:
-        return []
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(
-            "https://api.x.com/2/tweets/search/recent",
-            headers={"Authorization": f"Bearer {token}"},
-            params={
-                "query": query,
-                "max_results": max_results,
-                "tweet.fields": "created_at,public_metrics,text,author_id",
-            }
-        )
-        if resp.status_code == 200:
-            return resp.json().get("data", [])
-        logger.error(f"X search error: {resp.status_code} {resp.text}")
-        return []
+Find 5-10 recent tweets where real users express frustrations, complaints, feature requests, or unmet needs.
 
-async def process_tweets_to_ideas(tweets: list):
-    if not tweets or not EMERGENT_LLM_KEY:
-        return []
-    tweet_texts = "\n---\n".join([t.get("text", "") for t in tweets[:15]])
-    chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=f"xscrape-{uuid.uuid4()}",
-        system_message="You extract validated SaaS business opportunities from real user complaints on Twitter/X. Be specific and realistic."
-    ).with_model("openai", "gpt-4o")
+Then identify exactly 3 SPECIFIC micro-SaaS business opportunities from these real complaints.
 
-    prompt = f"""Analyze these real tweets from X/Twitter where people express frustrations, feature requests, and unmet needs:
-
-{tweet_texts}
-
-From these complaints, identify up to 3 DISTINCT, SPECIFIC micro-SaaS business opportunities. Only include ideas where there's a clear, monetizable pain point.
-
-Return ONLY a JSON array (no markdown) with objects having:
+Return ONLY a JSON array (no markdown, no code blocks) with 3 objects:
 - "title": string (specific product concept, under 60 chars)
-- "description": string (2-3 sentences about the pain + opportunity, referencing the real complaints)
-- "category": string (e.g. "Developer Tools", "Finance", "Marketing")
-- "pain_intensity": "severe" or "moderate"
-- "opportunity_score": number 60-95
-- "market_score": number 60-95
-- "competition_score": number 60-95
-- "revenue_score": number 60-95
-- "revenue_estimate": string (e.g. "$10K-$50K/mo")
-- "market_size": string (e.g. "$500M TAM")
-- "competition_analysis": string (1-2 sentences)
-- "tags": array of 4-6 strings
-- "pain_quote": string (the most compelling complaint quote from the tweets, cleaned up)
-
-If no valid opportunities exist, return an empty array []. Return ONLY valid JSON."""
-
-    result = await chat.send_message(UserMessage(text=prompt))
-    try:
-        cleaned = result.strip()
-        if cleaned.startswith("```"):
-            cleaned = cleaned.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-        return json_module.loads(cleaned)
-    except Exception as e:
-        logger.error(f"Failed to parse X ideas: {e}")
-        return []
-
-async def run_x_scrape():
-    logger.info("Starting X/Twitter scrape cycle...")
-    all_tweets = []
-    query = PAIN_QUERIES[hash(str(datetime.now(timezone.utc).hour)) % len(PAIN_QUERIES)]
-    try:
-        tweets = await search_x_tweets(query, max_results=10)
-        all_tweets.extend(tweets)
-    except Exception as e:
-        logger.error(f"X search failed for query: {e}")
-
-    if all_tweets:
-        ideas = await process_tweets_to_ideas(all_tweets)
-    else:
-        # AI-powered fallback: generate trending pain points when X API unavailable
-        logger.info("X API unavailable, using AI-powered trend discovery...")
-        ideas = await ai_discover_trending_pains()
-
-    saved = []
-    for idea in ideas[:3]:
-        existing = await db.ideas.find_one({"title": idea.get("title")})
-        if existing:
-            continue
-        idea_doc = {
-            "id": f"x_{uuid.uuid4().hex[:8]}",
-            "title": idea.get("title", ""),
-            "description": idea.get("description", ""),
-            "source": "twitter",
-            "source_display": "X / Twitter",
-            "category": idea.get("category", "Other"),
-            "pain_intensity": idea.get("pain_intensity", "moderate"),
-            "pain_quote": idea.get("pain_quote", ""),
-            "votes_on_source": idea.get("votes", 0),
-            "opportunity_score": idea.get("opportunity_score", 70),
-            "market_score": idea.get("market_score", 70),
-            "competition_score": idea.get("competition_score", 70),
-            "revenue_score": idea.get("revenue_score", 70),
-            "revenue_estimate": idea.get("revenue_estimate", "TBD"),
-            "market_size": idea.get("market_size", "TBD"),
-            "trending": True,
-            "upvotes": 0,
-            "tags": idea.get("tags", []),
-            "competition_analysis": idea.get("competition_analysis", ""),
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "scraped_from": "x_live",
-            "live": True,
-        }
-        await db.ideas.insert_one({**idea_doc})
-        saved.append({k: v for k, v in idea_doc.items() if k != "_id"})
-
-    logger.info(f"X scrape complete: {len(saved)} new ideas")
-    return saved
-
-async def ai_discover_trending_pains():
-    if not EMERGENT_LLM_KEY:
-        return []
-    chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=f"trend-{uuid.uuid4()}",
-        system_message="You are an expert at discovering trending pain points from social media. You simulate what people are currently complaining about on X/Twitter."
-    ).with_model("openai", "gpt-4o")
-    topics = ["remote work tools", "AI fatigue", "subscription overload", "developer experience", "small business ops", "creator economy", "personal finance", "health tech", "e-commerce friction", "data privacy"]
-    import random
-    topic = random.choice(topics)
-    prompt = f"""Imagine you just scraped X/Twitter for complaints about "{topic}". Generate 3 SPECIFIC micro-SaaS business opportunities based on realistic pain points people would tweet about.
-
-For each, imagine a real tweet that someone would post, and build the opportunity from that.
-
-Return ONLY a JSON array with objects having:
-- "title": string (specific product, under 60 chars)
-- "description": string (2-3 sentences, reference the type of complaint)
+- "description": string (2-3 sentences referencing the REAL complaints found)
 - "category": string
 - "pain_intensity": "severe" or "moderate"
 - "opportunity_score": number 60-95
@@ -1287,17 +1153,102 @@ Return ONLY a JSON array with objects having:
 - "market_size": string
 - "competition_analysis": string
 - "tags": array of 4-6 strings
-- "pain_quote": string (a realistic tweet-style complaint, 1-2 sentences)
-- "votes": number (simulated engagement, 50-500)
+- "pain_quote": string (the most compelling REAL tweet found)
+- "votes": number (approximate engagement)
 
-Return ONLY valid JSON, no markdown."""
+Return ONLY the JSON array."""}]
+            }
+        )
+        if resp.status_code != 200:
+            logger.error(f"xAI API error: {resp.status_code} {resp.text[:300]}")
+            return None
+        data = resp.json()
+        output = data.get("output", [])
+        for item in output:
+            if item.get("type") == "message":
+                for content in item.get("content", []):
+                    if content.get("type") == "output_text":
+                        return content.get("text", "")
+        return None
 
+async def parse_ideas_json(text: str):
+    """Parse JSON array from AI response text"""
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+    start = cleaned.find("[")
+    end = cleaned.rfind("]") + 1
+    if start >= 0 and end > start:
+        cleaned = cleaned[start:end]
+    return json_module.loads(cleaned)
+
+async def run_x_scrape():
+    logger.info("Starting X/Twitter scrape via xAI Grok...")
+    query = random.choice(PAIN_QUERIES)
+    ideas = []
+
+    result_text = await grok_x_search(query)
+    if result_text:
+        try:
+            ideas = await parse_ideas_json(result_text)
+            logger.info(f"xAI Grok returned {len(ideas)} ideas from real X data")
+        except Exception as e:
+            logger.error(f"Failed to parse xAI response: {e}")
+
+    if not ideas:
+        logger.info("xAI unavailable, using AI fallback...")
+        ideas = await ai_discover_trending_pains()
+
+    return await save_scraped_ideas(ideas, "twitter", "X / Twitter")
+
+async def save_scraped_ideas(ideas: list, source: str, source_display: str):
+    saved = []
+    for idea in ideas[:3]:
+        existing = await db.ideas.find_one({"title": idea.get("title")})
+        if existing:
+            continue
+        doc = {
+            "id": f"{source[:3]}_{uuid.uuid4().hex[:8]}",
+            "title": idea.get("title", ""),
+            "description": idea.get("description", ""),
+            "source": source,
+            "source_display": source_display,
+            "category": idea.get("category", "Other"),
+            "pain_intensity": idea.get("pain_intensity", "moderate"),
+            "pain_quote": idea.get("pain_quote", ""),
+            "votes_on_source": idea.get("votes", 0),
+            "opportunity_score": idea.get("opportunity_score", 70),
+            "market_score": idea.get("market_score", 70),
+            "competition_score": idea.get("competition_score", 70),
+            "revenue_score": idea.get("revenue_score", 70),
+            "revenue_estimate": idea.get("revenue_estimate", "TBD"),
+            "market_size": idea.get("market_size", "TBD"),
+            "trending": True, "upvotes": 0,
+            "tags": idea.get("tags", []),
+            "competition_analysis": idea.get("competition_analysis", ""),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "scraped_from": f"{source}_live", "live": True,
+        }
+        await db.ideas.insert_one({**doc})
+        saved.append({k: v for k, v in doc.items() if k != "_id"})
+    logger.info(f"Scrape complete: {len(saved)} new ideas from {source}")
+    return saved
+
+async def ai_discover_trending_pains():
+    if not EMERGENT_LLM_KEY:
+        return []
+    chat = LlmChat(
+        api_key=EMERGENT_LLM_KEY,
+        session_id=f"trend-{uuid.uuid4()}",
+        system_message="You discover trending pain points from social media."
+    ).with_model("openai", "gpt-4o")
+    topics = ["remote work tools", "AI fatigue", "subscription overload", "developer experience", "small business ops", "creator economy", "personal finance", "health tech", "e-commerce friction", "data privacy"]
+    topic = random.choice(topics)
+    prompt = f"""Generate 3 SPECIFIC micro-SaaS opportunities from realistic pain points about "{topic}".
+Return ONLY a JSON array with objects: title, description, category, pain_intensity, opportunity_score, market_score, competition_score, revenue_score, revenue_estimate, market_size, competition_analysis, tags, pain_quote, votes. No markdown."""
     result = await chat.send_message(UserMessage(text=prompt))
     try:
-        cleaned = result.strip()
-        if cleaned.startswith("```"):
-            cleaned = cleaned.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-        return json_module.loads(cleaned)
+        return await parse_ideas_json(result)
     except Exception as e:
         logger.error(f"AI trend discovery failed: {e}")
         return []
@@ -1419,7 +1370,7 @@ async def scrape_status():
     return {
         "live_ideas": live_count,
         "last_scraped": last_live.get("created_at") if last_live else None,
-        "x_configured": bool(X_CLIENT_ID and X_CLIENT_SECRET),
+        "x_configured": bool(XAI_API_KEY),
     }
 
 # Background scrape task
