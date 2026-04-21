@@ -30,6 +30,7 @@ STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
 X_CLIENT_ID = os.environ.get('X_CLIENT_ID')
 X_CLIENT_SECRET = os.environ.get('X_CLIENT_SECRET')
 XAI_API_KEY = os.environ.get('XAI_API_KEY')
+FIRECRAWL_API_KEY = os.environ.get('FIRECRAWL_API_KEY')
 
 PRICING_TIERS = {
     "pro": {"amount": 40.00, "label": "Pro"},
@@ -1132,7 +1133,7 @@ async def grok_x_search(query: str):
             "https://api.x.ai/v1/responses",
             headers={"Authorization": f"Bearer {XAI_API_KEY}", "Content-Type": "application/json"},
             json={
-                "model": "grok-3-fast",
+                "model": "grok-4",
                 "tools": [{"type": "x_search"}],
                 "input": [{"role": "user", "content": f"""Search X/Twitter for: {query}
 
@@ -1262,81 +1263,76 @@ async def trigger_x_scrape(user=Depends(require_user)):
 
 @api_router.post("/scrape/discover")
 async def trigger_multi_scrape(user=Depends(require_user)):
-    """Scrape multiple sources (Reddit, Product Hunt, App Store, X) using AI discovery"""
+    """Scrape real sources (Reddit, Indie Hackers, etc.) via Firecrawl + AI analysis"""
     if not user["is_premium"]:
         raise HTTPException(402, "Live discovery is a Pro feature.")
-    source_map = {
-        "reddit": {"display": "Reddit", "topics": ["productivity complaints", "SaaS frustrations", "tool recommendations", "workflow bottlenecks"]},
-        "producthunt": {"display": "Product Hunt", "topics": ["product launch gaps", "feature request patterns", "underserved niches", "creator tool needs"]},
-        "appstore": {"display": "App Store", "topics": ["app review complaints", "missing mobile features", "UX frustrations", "subscription fatigue"]},
-    }
+
+    SCRAPE_TARGETS = [
+        {"source": "reddit", "display": "Reddit", "urls": [
+            "https://www.reddit.com/r/SaaS/top/?t=week",
+            "https://www.reddit.com/r/startups/top/?t=week",
+            "https://www.reddit.com/r/Entrepreneur/top/?t=week",
+        ]},
+        {"source": "producthunt", "display": "Product Hunt", "urls": [
+            "https://www.producthunt.com/discussions",
+        ]},
+        {"source": "indiehackers", "display": "Indie Hackers", "urls": [
+            "https://www.indiehackers.com/posts",
+        ]},
+    ]
     import random
-    src_key = random.choice(list(source_map.keys()))
-    src = source_map[src_key]
-    topic = random.choice(src["topics"])
-    chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=f"discover-{uuid.uuid4()}",
-        system_message=f"You are an expert at discovering pain points from {src['display']}. Generate realistic, specific business opportunities."
-    ).with_model("openai", "gpt-4o")
-    prompt = f"""Imagine you scraped {src['display']} for complaints about "{topic}". Generate 3 SPECIFIC micro-SaaS opportunities.
+    target = random.choice(SCRAPE_TARGETS)
+    url = random.choice(target["urls"])
+    scraped_text = ""
 
-Return ONLY a JSON array with objects having:
-- "title": string (under 60 chars)
-- "description": string (2-3 sentences)
-- "category": string
-- "pain_intensity": "severe" or "moderate"
-- "opportunity_score": number 60-95
-- "market_score": number 60-95
-- "competition_score": number 60-95
-- "revenue_score": number 60-95
-- "revenue_estimate": string
-- "market_size": string
-- "competition_analysis": string
-- "tags": array of 4-6 strings
-- "pain_quote": string (a realistic complaint, 1-2 sentences)
-Return ONLY valid JSON."""
+    # Try Firecrawl first
+    if FIRECRAWL_API_KEY:
+        try:
+            from firecrawl import Firecrawl
+            fc = Firecrawl(api_key=FIRECRAWL_API_KEY)
+            result = fc.scrape(url, {"formats": ["markdown"]})
+            scraped_text = result.get("markdown", "")[:4000]
+            logger.info(f"Firecrawl scraped {len(scraped_text)} chars from {url}")
+        except Exception as e:
+            logger.error(f"Firecrawl error: {e}")
 
-    result = await chat.send_message(UserMessage(text=prompt))
-    try:
-        cleaned = result.strip()
-        if cleaned.startswith("```"):
-            cleaned = cleaned.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-        ideas_data = json_module.loads(cleaned)
-    except Exception:
-        return {"ideas": [], "count": 0, "source": src_key}
+    if scraped_text:
+        # Analyze real scraped content with AI
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"fc-{uuid.uuid4()}",
+            system_message="You extract micro-SaaS business opportunities from real web content. Be specific."
+        ).with_model("openai", "gpt-4o")
+        prompt = f"""Analyze this REAL content scraped from {target['display']} ({url}):
 
-    saved = []
-    for idea in ideas_data[:3]:
-        existing = await db.ideas.find_one({"title": idea.get("title")})
-        if existing:
-            continue
-        doc = {
-            "id": f"{src_key[:3]}_{uuid.uuid4().hex[:8]}",
-            "title": idea.get("title", ""),
-            "description": idea.get("description", ""),
-            "source": src_key,
-            "source_display": src["display"],
-            "category": idea.get("category", "Other"),
-            "pain_intensity": idea.get("pain_intensity", "moderate"),
-            "pain_quote": idea.get("pain_quote", ""),
-            "votes_on_source": 0,
-            "opportunity_score": idea.get("opportunity_score", 70),
-            "market_score": idea.get("market_score", 70),
-            "competition_score": idea.get("competition_score", 70),
-            "revenue_score": idea.get("revenue_score", 70),
-            "revenue_estimate": idea.get("revenue_estimate", "TBD"),
-            "market_size": idea.get("market_size", "TBD"),
-            "trending": True, "upvotes": 0,
-            "tags": idea.get("tags", []),
-            "competition_analysis": idea.get("competition_analysis", ""),
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "scraped_from": f"{src_key}_live", "live": True,
-        }
-        await db.ideas.insert_one({**doc})
-        saved.append({k: v for k, v in doc.items() if k != "_id"})
+{scraped_text}
 
-    return {"ideas": saved, "count": len(saved), "source": src_key, "source_display": src["display"]}
+Extract 3 SPECIFIC micro-SaaS business opportunities from complaints/discussions found.
+Return ONLY a JSON array: title, description, category, pain_intensity, opportunity_score(60-95), market_score, competition_score, revenue_score, revenue_estimate, market_size, competition_analysis, tags(4-6), pain_quote(real quote from content). No markdown."""
+        result = await chat.send_message(UserMessage(text=prompt))
+        try:
+            ideas = await parse_ideas_json(result)
+        except Exception:
+            ideas = []
+    else:
+        # AI fallback when Firecrawl unavailable
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"discover-{uuid.uuid4()}",
+            system_message=f"You discover pain points from {target['display']}. Generate realistic opportunities."
+        ).with_model("openai", "gpt-4o")
+        topics = ["productivity", "dev tools", "marketing", "finance", "operations", "creator economy"]
+        topic = random.choice(topics)
+        prompt = f"""Generate 3 SPECIFIC micro-SaaS opportunities from {target['display']} about "{topic}".
+Return ONLY a JSON array: title, description, category, pain_intensity, opportunity_score(60-95), market_score, competition_score, revenue_score, revenue_estimate, market_size, competition_analysis, tags(4-6), pain_quote. No markdown."""
+        result = await chat.send_message(UserMessage(text=prompt))
+        try:
+            ideas = await parse_ideas_json(result)
+        except Exception:
+            return {"ideas": [], "count": 0, "source": target["source"]}
+
+    saved = await save_scraped_ideas(ideas, target["source"], target["display"])
+    return {"ideas": saved, "count": len(saved), "source": target["source"], "source_display": target["display"]}
 
 # ── Public Idea Sharing ────────────────────────────────────────
 @api_router.post("/ideas/{idea_id}/share")
